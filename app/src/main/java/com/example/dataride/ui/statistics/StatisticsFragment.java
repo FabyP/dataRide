@@ -1,4 +1,4 @@
-package com.example.dataride.ui.notifications;
+package com.example.dataride.ui.statistics;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,17 +14,17 @@ import androidx.lifecycle.ViewModelProviders;
 
 import com.example.dataride.R;
 
-public class NotificationsFragment extends Fragment {
+public class StatisticsFragment extends Fragment {
 
-    private NotificationsViewModel notificationsViewModel;
+    private StatisticsViewModel statisticsViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        notificationsViewModel =
-                ViewModelProviders.of(this).get(NotificationsViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_notifications, container, false);
+        statisticsViewModel =
+                ViewModelProviders.of(this).get(StatisticsViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_statistics, container, false);
         final TextView textView = root.findViewById(R.id.text_notifications);
-        notificationsViewModel.getText().observe(this, new Observer<String>() {
+        statisticsViewModel.getText().observe(this, new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);

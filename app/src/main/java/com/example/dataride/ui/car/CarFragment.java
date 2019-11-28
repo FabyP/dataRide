@@ -1,4 +1,4 @@
-package com.example.dataride.ui.dashboard;
+package com.example.dataride.ui.car;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,17 +14,17 @@ import androidx.lifecycle.ViewModelProviders;
 
 import com.example.dataride.R;
 
-public class DashboardFragment extends Fragment {
+public class CarFragment extends Fragment {
 
-    private DashboardViewModel dashboardViewModel;
+    private CarViewModel carViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        dashboardViewModel =
-                ViewModelProviders.of(this).get(DashboardViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_dashboard, container, false);
-        final TextView textView = root.findViewById(R.id.text_dashboard);
-        dashboardViewModel.getText().observe(this, new Observer<String>() {
+        carViewModel =
+                ViewModelProviders.of(this).get(CarViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_car, container, false);
+        final TextView textView = root.findViewById(R.id.text_home);
+        carViewModel.getText().observe(this, new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);

@@ -3,23 +3,23 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
+    app:startDestination="@+id/navigation_car">
 
     <fragment
-        android:id="@+id/navigation_home"
-        android:name="com.example.dataride.ui.home.HomeFragment"
-        android:label="@string/title_home"
-        tools:layout="@layout/fragment_home" />
+        android:id="@+id/navigation_car"
+        android:name="com.example.dataride.ui.car.CarFragment"
+        android:label="@string/title_car"
+        tools:layout="@layout/fragment_car" />
 
     <fragment
-        android:id="@+id/navigation_dashboard"
-        android:name="com.example.dataride.ui.dashboard.DashboardFragment"
-        android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
+        android:id="@+id/navigation_navigation"
+        android:name="com.example.dataride.ui.navigation.NavigationFragment"
+        android:label="@string/title_navigation"
+        tools:layout="@layout/fragment_navigation" />
 
     <fragment
-        android:id="@+id/navigation_notifications"
-        android:name="com.example.dataride.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        android:id="@+id/navigation_statistics"
+        android:name="com.example.dataride.ui.statistics.StatisticsFragment"
+        android:label="@string/title_statistics"
+        tools:layout="@layout/fragment_statistics" />
 </navigation>
