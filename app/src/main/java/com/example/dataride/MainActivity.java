@@ -26,6 +26,7 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
+@RequiresApi(api = Build.VERSION_CODES.N)
 public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener {
     // minimale zeit und distanz ab der die gps daten aktualisiert werden
     //angegeben in milli sekunden
@@ -90,20 +91,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             @RequiresApi(api = Build.VERSION_CODES.N)
             @Override
             public void onClick(View v) {
-                locationManager =
-                        (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+                locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
                 //Abfrage ob Gps an ist, ist das doppelt zu der methode weiter unten?
                 //in die methode des on click start buttons einfügen sobald vorhanden
                 //Position abfragen
                 if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    Activity#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for Activity#requestPermissions for more details.
-                    return;
+                    // müsste automatisch das Signal einschalten sobald man bestätigt
+                    Toast.makeText(MainActivity.this, "GPS nicht gefunden", Toast.LENGTH_LONG).show();
+                    Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    startActivity(intent);
                 }
                     locationManager.addNmeaListener(nmeaListener);
                     locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
@@ -114,13 +110,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                     if(loc1 != null) {
                         long1 = loc1.getLongitude();
                         lat1 = loc1.getLatitude();
-                    } else{
-                    // müsste automatisch das Signal einschalten sobald man bestätigt
-                    Toast.makeText(MainActivity.this, "GPS nicht gefunden", Toast.LENGTH_LONG).show();
-                    Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                    startActivity(intent);
-
-                }
+                    }
             }
         });
     }
