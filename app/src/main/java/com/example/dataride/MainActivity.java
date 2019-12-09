@@ -1,6 +1,7 @@
 package com.example.dataride;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,7 +14,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -21,12 +25,13 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-@RequiresApi(api = Build.VERSION_CODES.N)
+
 public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener {
     // minimale zeit und distanz ab der die gps daten aktualisiert werden
     //angegeben in milli sekunden
@@ -36,48 +41,30 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     //hier auf 0 gesetzt damit er einfach immer nur das zeitintervall nimmt
     private static final float MIN_DISTANCE_TO_REFRESH = 0F;
 
-    LocationManager locationManager = null;
+    LocationManager lm = null;
     OnNmeaMessageListener nmeaListener = null;
-    private Handler mHandler = null;
     LocationListener gpsListener = null;
-    Location loc1 = null;
-    Location loc2 = null;
 
+    //Testzwecken
+    TextView textLong;
+    TextView textLat;
+    TextView textNmea;
+    TextView text4;
 
-    boolean goodGps = false;
-
-    //Variablen für Berechnung
-    double long1;
-    double long2;
-    double lat;
-    double latRad;
-    double lat1;
-    double lat2;
-    double dx;
-    double dy;
-
-    double distance;
-    double distanceSpeed;
-
-    double speed;
-    double speedDefault;
-    double time;
-    double overallTime;
-
-    //co2 Berechnung Variablen
-    double gas;
-    double coOutput;
-    String gasType;
-    double gasAmount;
-    double driven;
+    FloatingActionButton fab;
+    boolean clicked;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         BottomNavigationView navView = findViewById(R.id.nav_view);
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
+        textLat = (TextView) findViewById(R.id.textView);
+        textLong = (TextView) findViewById(R.id.textView2);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        clicked = false;
+
+
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
                 .build();
@@ -85,39 +72,87 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
 
+       fab.setOnClickListener(new View.OnClickListener(){
             @RequiresApi(api = Build.VERSION_CODES.N)
             @Override
             public void onClick(View v) {
-                locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-                //Abfrage ob Gps an ist, ist das doppelt zu der methode weiter unten?
-                //in die methode des on click start buttons einfügen sobald vorhanden
-                //Position abfragen
-                if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // müsste automatisch das Signal einschalten sobald man bestätigt
-                    Toast.makeText(MainActivity.this, "GPS nicht gefunden", Toast.LENGTH_LONG).show();
-                    Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                    startActivity(intent);
+                if(clicked){
+                    Toast.makeText(MainActivity.this,"Stop Tracking",Toast.LENGTH_SHORT).show();
+                    Log.v("CLICKED","");
+                    stopTracking();
+                    clicked = false;
+                } else{
+                    startTracking();
+                    Toast.makeText(MainActivity.this,"Start Tracking",Toast.LENGTH_SHORT).show();
+                    Log.v("CLICKED","");
+                    clicked = true;
                 }
-                    locationManager.addNmeaListener(nmeaListener);
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                            MIN_TIME_TO_REFRESH,
-                            MIN_DISTANCE_TO_REFRESH,
-                            MainActivity.this);
-                    loc1 = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                    if(loc1 != null) {
-                        long1 = loc1.getLongitude();
-                        lat1 = loc1.getLatitude();
-                    }
+
             }
         });
+
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public void startTracking(){
+        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+            Toast.makeText(MainActivity.this, "Bitte die Rechte für das GPS vergeben", Toast.LENGTH_LONG).show();
+        }
+        LocationManager lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+        if(lm != null) {
+            lm.addNmeaListener(MainActivity.this);
+            boolean isGPSEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            if (isGPSEnabled) {
+                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 6000, 0, MainActivity.this);
+            } else {
+                textLong.setText("SHIT");
+            }
+        } else{
+            Toast.makeText(MainActivity.this, "Kein Signal gefunden", Toast.LENGTH_LONG).show();
+        }
+    }
+    public  void stopTracking(){
+        //hier sicherstellen das er alles vorherige rausnimmt
+        textLat.setText("Remove");
+        textLong.setText("Remove");
+    }
+
+    //Android Lifecycle Methoden
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        lm.removeUpdates(MainActivity.this);
+    }
+
+    //wird immer wieder aufgerufen auch wenn die app geschlossen war aber noch nicht gelöscht wurde,
+    // deswegen hier nochmal der check ob gps immer noch vorhanden ist
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    //hier wird alles entfernt sobald der Nutzer die app schließt
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        lm.removeUpdates(MainActivity.this);
     }
 
     @Override
     public void onLocationChanged(Location location) {
-
+        if(location != null) {
+        double lat = location.getLatitude();
+        double lon = location.getLongitude();
+        String latString = Double.toString(lat);
+        String lonString = Double.toString(lon);
+        textLat.setText(latString);
+        }
     }
 
     @Override
@@ -137,6 +172,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     @Override
     public void onNmeaMessage(String message, long timestamp) {
-
+        textLong.setText(message);
     }
 }
