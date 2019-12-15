@@ -147,8 +147,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     public  void stopTracking(){
         textLat.setText("Remove");
         textLong.setText("Remove");
-        lm.removeUpdates(MainActivity.this);
-        lm.removeNmeaListener(MainActivity.this);
+        //lm.removeUpdates(MainActivity.this);
+        //lm.removeNmeaListener(MainActivity.this);
     }
 
     @Override
@@ -171,15 +171,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     @Override
     public void onNmeaMessage(String message, long timestamp) {
+        getLatLong(message);
 
         //Daten abspeichern
-        String time = Long.toString(timestamp);
-        writeRawDataInStorage(MainActivity.this, time, message);
+        //String time = Long.toString(timestamp);
+        //writeRawDataInStorage(MainActivity.this, time, message);
 
         //Daten filtern und berechnen
-        filterNmea(message);
+        //filterNmea(message);
 
-        if(gpsQuality){
+        /*if(gpsQuality){
             getLatLong(message);
 
             //checken ob null ist
@@ -201,7 +202,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
             } else{
                 return;
-            }
+            }*/
 
     }
 
@@ -290,8 +291,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         String[] rawNmeaSplit = nmea.split(",");
 
         if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
-            Latitude1 = convertDecimal(Double.parseDouble(rawNmeaSplit[2]));
-            Longtitude1 = convertDecimal(Double.parseDouble(rawNmeaSplit[4]));
+            Latitude1 = Double.parseDouble(rawNmeaSplit[2]);
+            Longtitude1 = Double.parseDouble(rawNmeaSplit[4]);
+            textLat.setText(String.valueOf(Latitude1));
+            textLong.setText(String.valueOf(Longtitude1));
         }
     }
 
@@ -308,10 +311,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         return (deg * Math.PI / 180.0);
     }
 
+    //Mehtode funktioniert so nicht, convert erwartet anderes Format muss ich selbst converter schreiben
     private double convertDecimal(double degree){
         String converted = Location.convert( degree , Location.FORMAT_DEGREES);
-        double decimal = Double.parseDouble(converted);
-        return decimal;
+        return Double.parseDouble(converted);
     }
 
     public double savedTime(){
