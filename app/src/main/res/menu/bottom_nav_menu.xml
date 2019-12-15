@@ -16,4 +16,5 @@
         android:icon="@drawable/ic_insert_chart_24dp"
         android:title="@string/title_statistics" />
 
+
 </menu>

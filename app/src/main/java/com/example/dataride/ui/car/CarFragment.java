@@ -14,16 +14,18 @@ import androidx.lifecycle.ViewModelProviders;
 
 import com.example.dataride.R;
 
+
 public class CarFragment extends Fragment {
 
     private CarViewModel carViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+
         carViewModel =
                 ViewModelProviders.of(this).get(CarViewModel.class);
         View root = inflater.inflate(R.layout.fragment_car, container, false);
-        final TextView textView = root.findViewById(R.id.text_home);
+        final TextView textView = root.findViewById(R.id.text_time);
         carViewModel.getText().observe(this, new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
