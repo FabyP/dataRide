@@ -25,6 +25,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -76,11 +77,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     double defaultSpeed;
 
 
+    Button b_settings;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+
+        b_settings = (Button) findViewById(R.id.b_settings);
+
+        b_settings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
+                startActivity(intent);
+            }
+        });
+
         BottomNavigationView navView = findViewById(R.id.nav_view);
         textLat = (TextView) findViewById(R.id.textView);
         textLong = (TextView) findViewById(R.id.textView2);
@@ -94,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
 
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
+                R.id.navigation_car, R.id.navigation_navigation, R.id.navigation_statistics)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);

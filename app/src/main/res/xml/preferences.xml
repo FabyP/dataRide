@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <CheckBoxPreference
+        android:key="pref_bluetooth"
+        android:title="@string/pref_bluetooth_title"
+        android:summary="@string/pref_bluetooth_summary"
+        android:defaultValue="false"/>
+
+    <ListPreference
+        android:key="pref_car_icon"
+        android:title="@string/pref_car_icon_title"
+        android:entries="@array/pref_car_icon_item_entries"
+        android:entryValues="@array/pref_car_icon_item_values"
+        android:defaultValue="@string/pref_car_icon_default_value"
+        android:summary="@string/pref_car_icon_default_value"/>
+
+    <EditTextPreference
+        android:key="pref_car_values"
+        android:title="@string/pref_car_values_title"
+        android:summary="@string/pref_car_values_summary"/>
+
+    <EditTextPreference
+        android:key="dataProtection"
+        android:title="@string/dataProtection_title"/>
+
+
+</PreferenceScreen>

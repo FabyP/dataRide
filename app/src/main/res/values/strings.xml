@@ -1,6 +1,41 @@
 <resources>
     <string name="app_name">dataRide</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="title_car">Auto</string>
+    <string name="title_navigation">Navigation</string>
+    <string name="title_statistics">Statistiken</string>
+
+    <string name="car_speed">Aktuelle Geschwindigkeit</string>
+    <string name="car_passedTime">Vergangene Zeit</string>
+    <string name="car_savedTime">Gesparte Zeit</string>
+    <string name="car_altSVG">Vektorgrafik eines Autos</string>
+
+    <string name="text_savings">Savings</string>
+
+    <string-array name="dateRange_array">
+        <item>Tag</item>
+        <item>Monat</item>
+        <item>Jahr</item>
+    </string-array>
+
+    <string name="pref_bluetooth_title">Bluetooth</string>
+    <string name="pref_bluetooth_summary">Automatische Bluetooth-Verbindung erlauben</string>
+
+    <string name="pref_car_icon_title">Auto Icon</string>
+    <string-array name="pref_car_icon_item_entries">
+        <item>Limousine</item>
+        <item>Kleinwagen</item>
+        <item>Sportwagen</item>
+    </string-array>
+    <string-array name="pref_car_icon_item_values">
+        <item>Limousine</item>
+        <item>Kleinwagen</item>
+        <item>Sportwagen</item>
+    </string-array>
+    <string name="pref_car_icon_default_value">Limousine</string>
+
+    <string name="dataProtection_title">Datenschutzerklärung</string>
+
+    <string name="pref_car_values_title">Benutzerspezifische Autowerte</string>
+    <string name="pref_car_values_summary">Werte zur Berechnung des CO2-Ausstoßes</string>
+
 </resources>

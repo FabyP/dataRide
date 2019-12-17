@@ -1,4 +1,4 @@
-package com.example.dataride.ui.dashboard;
+package com.example.dataride.ui.navigation;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,17 +14,17 @@ import androidx.lifecycle.ViewModelProviders;
 
 import com.example.dataride.R;
 
-public class DashboardFragment extends Fragment {
+public class NavigationFragment extends Fragment {
 
-    private DashboardViewModel dashboardViewModel;
+    private NavigationViewModel navigationViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        dashboardViewModel =
-                ViewModelProviders.of(this).get(DashboardViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_dashboard, container, false);
+        navigationViewModel =
+                ViewModelProviders.of(this).get(NavigationViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_navigation, container, false);
         final TextView textView = root.findViewById(R.id.text_dashboard);
-        dashboardViewModel.getText().observe(this, new Observer<String>() {
+        navigationViewModel.getText().observe(this, new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);
