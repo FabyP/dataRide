@@ -108,8 +108,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                 if(clicked){
                     Toast.makeText(MainActivity.this,"Stop Tracking",Toast.LENGTH_SHORT).show();
                     stopTracking();
+                    endTime = System.currentTimeMillis();
+                    totalTime = totalTime(startTime, endTime);
                     clicked = false;
                 } else{
+                    startTime = System.currentTimeMillis();
                     startTracking();
                     Toast.makeText(MainActivity.this,"Start Tracking",Toast.LENGTH_SHORT).show();
                     clicked = true;
@@ -124,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             Toast.makeText(MainActivity.this, "Bitte die Rechte für das GPS vergeben", Toast.LENGTH_LONG).show();
         }
-        LocationManager lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+        lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
         if(lm != null) {
             boolean isGPSEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
             if (isGPSEnabled) {
@@ -147,8 +150,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     public  void stopTracking(){
         textLat.setText("Remove");
         textLong.setText("Remove");
-        //lm.removeUpdates(MainActivity.this);
-        //lm.removeNmeaListener(MainActivity.this);
+        lm.removeUpdates(MainActivity.this);
+        lm.removeNmeaListener(MainActivity.this);
     }
 
     @Override
@@ -167,6 +170,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @Override
     public void onProviderDisabled(String provider) {
 
+    }
+
+    public long totalTime(long start, long end){
+        totalTime = (((end-start) / (1000*60*60)) % 24);
+        return totalTime;
     }
 
     @Override
@@ -190,12 +198,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                 changeAttributes();
                 } else {
                 getSpeed(message);
-                distance = +distance(Latitude1, Longtitude1, Latitude2, Longtitude2);
-                totalDistance = +distance;
+                distance = distance(Latitude1, Longtitude1, Latitude2, Longtitude2);
+                totalDistance += distance;
 
                 if (speed > defaultSpeed) {
-                    distanceTime = +distance;
-                    savedTime = +savedTime();
+                    distanceTime += distance;
+                    savedTime += savedTime();
                 }
                 changeAttributes();
             }
