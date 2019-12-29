@@ -8,6 +8,7 @@
     <string name="car_passedTime">Vergangene Zeit</string>
     <string name="car_savedTime">Gesparte Zeit</string>
     <string name="car_altSVG">Vektorgrafik eines Autos</string>
+    <string name="speed_Deafault">0 km/h</string>
 
     <string name="text_savings">Savings</string>
 

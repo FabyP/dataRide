@@ -14,9 +14,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
+import android.text.Layout;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,7 +29,10 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -36,9 +42,11 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 
+import static com.example.dataride.R.id.currentSpeed;
+
 
 @RequiresApi(api = Build.VERSION_CODES.N)
-public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener {
+public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener{
 
     // minimale zeit und distanz ab der die gps daten aktualisiert werden
     //angegeben in milli sekunden
@@ -51,9 +59,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     LocationManager lm = null;
 
 
-    //Testzwecken
     TextView textLong;
     TextView textLat;
+
 
     //Variablen für FABoulos
     FloatingActionButton fab;
@@ -72,12 +80,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     double totalDistance;
     double distanceTime;
     double savedTime;
+    long totalTime;
+    long startTime;
+    long endTime;
 
     double speed;
     double defaultSpeed;
+    String speedText;
 
 
     Button b_settings;
+
+    private OnChangeListener SpeedListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,8 +110,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         });
 
         BottomNavigationView navView = findViewById(R.id.nav_view);
-        textLat = (TextView) findViewById(R.id.textView);
-        textLong = (TextView) findViewById(R.id.textView2);
+        textLat = (TextView) findViewById(R.id.textView2);
+        textLong = (TextView) findViewById(R.id.textView);
         fab = (FloatingActionButton) findViewById(R.id.fab);
 
         clicked = false;
@@ -139,21 +153,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void startTracking(){
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            Toast.makeText(MainActivity.this, "Bitte die Rechte für das GPS vergeben", Toast.LENGTH_LONG).show();
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.INTERNET
+            }, 10);
+            return;
         }
         lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+        if(!lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER )) {
+            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            startActivity(intent);
+        }
         if(lm != null) {
-            boolean isGPSEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            if (isGPSEnabled) {
                 lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 6000, 0, MainActivity.this);
                 Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                 onLocationChanged(location);
                 lm.addNmeaListener(MainActivity.this);
-            } else {
-                textLong.setText("SHIT");
-            }
         } else{
-            Toast.makeText(MainActivity.this, "Kein Signal gefunden", Toast.LENGTH_LONG).show();
+            Toast.makeText(MainActivity.this, "Es ist ein Fehler mit der GPS-Verbingung aufgetreten.", Toast.LENGTH_LONG).show();
         }
 
         lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 6000, 0, MainActivity.this);
@@ -193,7 +209,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     @Override
     public void onNmeaMessage(String message, long timestamp) {
-        getLatLong(message);
+        filterGSA(message);
+        //getLatLong(message);
+        //getSpeed(message);
+
+        //String[] rawNmeaSplit = message.split(",");
+        //filterGGA(rawNmeaSplit);
 
         //Daten abspeichern
         //String time = Long.toString(timestamp);
@@ -235,26 +256,28 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         boolean GSVGood = false;
         String[] rawNmeaSplit = nmea.split(",");
 
-        GGAGood = filterGGA(rawNmeaSplit);
+/*        GGAGood = filterGGA(rawNmeaSplit);
         GSAGood = filterGSA(rawNmeaSplit);
         GSVGood = filterGSV(rawNmeaSplit);
         if (GSAGood && GGAGood && GSVGood){
             gpsQuality = true;
         } else{
             gpsQuality = false;
-        }
+        }*/
 
     }
 
 
-    public boolean filterGGA(String[] rawNmeaSplit){
+    public boolean filterGGA(String nmea) {
+        String[] rawNmeaSplit = nmea.split(",");
         boolean gga = false;
 
-        if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")){
+        if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
+
             String fixQualityString = rawNmeaSplit[6];
-            Integer fixQuality = Integer.parseInt(fixQualityString);
+            int fixQuality = Integer.parseInt(fixQualityString);
             String numberSatellitesString = rawNmeaSplit[7];
-            Integer numberSatellites = Integer.parseInt(numberSatellitesString);
+            int numberSatellites = Integer.parseInt(numberSatellitesString);
             if(fixQuality > 0 && fixQuality < 5 && numberSatellites > 4){
                 gga = true;
             } else{
@@ -262,20 +285,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             }
         }
         return gga;
+
     }
 
-    public boolean filterGSA(String[] rawNmeaSplit){
+    public void filterGSA(String nmea){
             boolean gsa = false;
-            if(rawNmeaSplit[0].equalsIgnoreCase("$GPGSA")){
-                String PDOPString=rawNmeaSplit[15];
-                Double PDOP=Double.parseDouble(PDOPString);
+            String[] rawNmeaSplit = nmea.split(",");
+            if(rawNmeaSplit[0].equalsIgnoreCase("$GPGSA")) {
+                String PDOPString = rawNmeaSplit[15];
+                //textLat.setText(PDOPString);
+                /*Double PDOP=Double.parseDouble(PDOPString);
                 if(PDOP< 6){
                     gsa = true;
                 }else{
                     gsa = false;
                 }
             }
-            return gsa;
+            return gsa;*/
+            }
     }
 
     //Vergleich funktioniert nicht, noch testen
@@ -309,14 +336,42 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         }
     }
 
+    public String speedFromMainActivity(){
+        if(speedText != null) {
+            return speedText + "km/h";
+        }else{
+            return "km/h";
+        }
+    }
+
+
     public void getLatLong(String nmea) {
         String[] rawNmeaSplit = nmea.split(",");
 
         if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
-            Latitude1 = Double.parseDouble(rawNmeaSplit[2]);
-            Longtitude1 = Double.parseDouble(rawNmeaSplit[4]);
-            textLat.setText(String.valueOf(Latitude1));
-            textLong.setText(String.valueOf(Longtitude1));
+
+            String Lati = rawNmeaSplit[2];
+
+            //Zahlen auf Konvertierung und Ausgabe vorbereiten
+            String Number1 = Lati.substring(0, 2);
+            String Number2 = Lati.substring(2, Lati.length());
+            double Number1Double = Double.parseDouble(Number1);
+            double Number2Double = Double.parseDouble(Number2);
+
+            Latitude1 = convertDecimal(Number1Double, Number2Double);
+
+            String Longi = rawNmeaSplit[4];
+
+            //Zahlen auf Konvertierung und Ausgabe vorbereiten
+            String Number3 = Longi.substring(0, 3);
+            String Number4 = Longi.substring(3, Longi.length());
+            double Number3Double = Double.parseDouble(Number3);
+            double Number4Double = Double.parseDouble(Number4);
+
+            Longtitude1 = convertDecimal(Number3Double, Number4Double);
+
+            //wird übergeben damit Text ausgegeben wird
+            setText(Number1, Number2, Number3, Number4);
         }
     }
 
@@ -333,10 +388,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         return (deg * Math.PI / 180.0);
     }
 
-    //Mehtode funktioniert so nicht, convert erwartet anderes Format muss ich selbst converter schreiben
-    private double convertDecimal(double degree){
-        String converted = Location.convert( degree , Location.FORMAT_DEGREES);
-        return Double.parseDouble(converted);
+    private double convertDecimal(double degree, double minute){
+        double converted = degree + (minute/60);
+        return converted;
+    }
+    public void setText(String lat1, String lat2, String long1, String long2){
+        //wandelt die Angaben so um das sie für den Nutzer gut erkennbar sind
+       textLat.setText(lat1 + (char) 0x00B0 + " " + lat2 + "\"");
+       textLong.setText(long1 + (char) 0x00B0 + " " + long2 + "\"");
     }
 
     public double savedTime(){
@@ -425,6 +484,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @Override
     protected void onResume() {
         super.onResume();
+        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.INTERNET
+            }, 10);
+            return;
+        }
+        lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+        if(!lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER )) {
+            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            startActivity(intent);
+        }
     }
 
     //hier wird alles entfernt sobald der Nutzer die app schließt
@@ -434,6 +504,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         lm.removeUpdates(MainActivity.this);
         lm.removeNmeaListener(MainActivity.this);
     }
+
+
+
 }
 
 //Test Berechnung
