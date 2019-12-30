@@ -17,6 +17,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -25,6 +28,7 @@ import android.widget.Toast;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -96,7 +100,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
-        b_settings = (Button) findViewById(R.id.b_settings);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        /*b_settings = (Button) findViewById(R.id.b_settings);
 
         b_settings.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -104,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                 Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
                 startActivity(intent);
             }
-        });
+        });*/
 
         BottomNavigationView navView = findViewById(R.id.nav_view);
         textLat = (TextView) findViewById(R.id.textView);
@@ -448,6 +455,25 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         String averageFuelConsumptionPref = sharedPreferences.getString("pref_average_fuel_consumption", "");
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.example_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+
+        switch(item.getItemId()){
+            case R.id.item1:
+                startActivity(new Intent(this, SettingsActivity.class));
+                return true;
+
+                default:
+                    return super.onOptionsItemSelected(item);
+        }
+    }
 }
 
 //Test Berechnung
