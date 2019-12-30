@@ -38,4 +38,19 @@
     <string name="pref_car_values_title">Benutzerspezifische Autowerte</string>
     <string name="pref_car_values_summary">Werte zur Berechnung des CO2-Ausstoßes</string>
 
+
+    <string name="pref_gas_title">Kraftstoff</string>
+    <string-array name="pref_gas_item_entries">
+        <item>Benzin</item>
+        <item>Diesel</item>
+    </string-array>
+    <string-array name="pref_gas_item_values">
+        <item>Benzin</item>
+        <item>Diesel</item>
+    </string-array>
+    <string name="pref_gas_default_value">Benzin</string>
+
+    <string name="pref_average_fuel_consumption_title">Durchschnittsverbrauch</string>
+    <string name="pref_average_fuel_consumption_summary">In Liter pro 100km</string>
+
 </resources>

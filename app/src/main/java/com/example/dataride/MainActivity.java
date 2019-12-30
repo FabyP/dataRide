@@ -4,12 +4,14 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.location.OnNmeaMessageListener;
+import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -31,6 +33,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
+import androidx.preference.PreferenceManager;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -39,6 +42,11 @@ import java.io.FileWriter;
 
 @RequiresApi(api = Build.VERSION_CODES.N)
 public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener {
+
+
+    //Preferences
+    public static final String PREF_GAS_VAR = "pref_gas";
+    public static final String PREF_AVERAGE_FUEL_CONSUMPTION_VAR = "pref_average_fuel_consumption";
 
     // minimale zeit und distanz ab der die gps daten aktualisiert werden
     //angegeben in milli sekunden
@@ -78,12 +86,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
 
     Button b_settings;
+    private String Tag;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
+
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 
         b_settings = (Button) findViewById(R.id.b_settings);
 
@@ -111,7 +122,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                 R.id.navigation_car, R.id.navigation_navigation, R.id.navigation_statistics)
                 .build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+//        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
 
@@ -426,6 +437,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         lm.removeUpdates(MainActivity.this);
         lm.removeNmeaListener(MainActivity.this);
     }
+
+
+
+
+    //Read Settings
+    public void readSettings(View view){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String gasPref = sharedPreferences.getString("pref_gas", "");
+        String averageFuelConsumptionPref = sharedPreferences.getString("pref_average_fuel_consumption", "");
+    }
+
 }
 
 //Test Berechnung

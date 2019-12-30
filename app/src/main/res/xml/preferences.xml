@@ -16,10 +16,25 @@
         android:defaultValue="@string/pref_car_icon_default_value"
         android:summary="@string/pref_car_icon_default_value"/>
 
-    <EditTextPreference
+    <PreferenceScreen
         android:key="pref_car_values"
         android:title="@string/pref_car_values_title"
-        android:summary="@string/pref_car_values_summary"/>
+        android:summary="@string/pref_car_values_summary">
+
+        <ListPreference
+            android:key="pref_gas"
+            android:title="@string/pref_gas_title"
+            android:entries="@array/pref_gas_item_entries"
+            android:entryValues="@array/pref_gas_item_values"
+            android:defaultValue="@string/pref_gas_default_value"
+            android:summary="@string/pref_gas_default_value"/>
+
+        <EditTextPreference
+            android:key="pref_average_fuel_consumption"
+            android:title="@string/pref_average_fuel_consumption_title"
+            android:summary="@string/pref_average_fuel_consumption_summary"
+            android:defaultValue="6"/>
+    </PreferenceScreen>
 
     <EditTextPreference
         android:key="dataProtection"
