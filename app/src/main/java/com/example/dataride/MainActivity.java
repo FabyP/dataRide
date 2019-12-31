@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     double speed;
     double defaultSpeed;
-    String speedText;
+    public String speedText;
 
 
     Button b_settings;
@@ -209,9 +209,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     @Override
     public void onNmeaMessage(String message, long timestamp) {
-        filterGSA(message);
-        //getLatLong(message);
-        //getSpeed(message);
+        //filterGSA(message);
+        getLatLong(message);
+        getSpeed(message);
 
         //String[] rawNmeaSplit = message.split(",");
         //filterGGA(rawNmeaSplit);
@@ -333,6 +333,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
         if (rawNmeaSplit[0].equalsIgnoreCase("$GPVTG")) {
             speed = Double.parseDouble(rawNmeaSplit[7]);
+            speedText = rawNmeaSplit[7];
         }
     }
 
@@ -392,6 +393,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         double converted = degree + (minute/60);
         return converted;
     }
+
     public void setText(String lat1, String lat2, String long1, String long2){
         //wandelt die Angaben so um das sie für den Nutzer gut erkennbar sind
        textLat.setText(lat1 + (char) 0x00B0 + " " + lat2 + "\"");
