@@ -113,6 +113,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         textLat = (TextView) findViewById(R.id.textView2);
         textLong = (TextView) findViewById(R.id.textView);
         fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setImageResource(R.drawable.ic_pause_black_24dp);
 
         clicked = false;
 
@@ -136,6 +137,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             @Override
             public void onClick(View v) {
                 if(clicked){
+                    fab.setImageResource(R.drawable.ic_pause_black_24dp);
                     Toast.makeText(MainActivity.this,"Stop Tracking",Toast.LENGTH_SHORT).show();
 
                     //Bricht die Aufnahme der Daten ab
@@ -148,6 +150,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                     totalTime = totalTime(startTime, endTime);
                     clicked = false;
                 } else{
+                    fab.setImageResource(R.drawable.ic_play_arrow_24dp);
                     //nimmt die Zeit auf in der Auf start gedrückt wurde
                     startTime = System.currentTimeMillis();
 
