@@ -14,18 +14,13 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
-import com.example.dataride.MainActivity;
-import com.example.dataride.OnChangeListener;
 import com.example.dataride.R;
-
-import java.util.Observable;
 
 
 public class CarFragment extends Fragment {
 
     private CarViewModel carViewModel;
     private TextView speedText;
-    OnChangeListener SpeedListener;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -42,9 +37,9 @@ public class CarFragment extends Fragment {
             }
         });
 
-        MainActivity activity = (MainActivity) getActivity();
+/*        MainActivity activity = (MainActivity) getActivity();
         speedText = (TextView)root.findViewById(R.id.currentSpeed);
-        speedText.setText(activity.speedFromMainActivity());
+        speedText.setText(activity.speedFromMainActivity());*/
         return root;
     }
 }

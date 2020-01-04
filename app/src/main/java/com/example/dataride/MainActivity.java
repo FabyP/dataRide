@@ -41,6 +41,7 @@ import androidx.navigation.ui.NavigationUI;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.text.DecimalFormat;
 
 import static com.example.dataride.R.id.currentSpeed;
 
@@ -58,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     LocationManager lm = null;
 
-
+    //Textfelder die in dem Layout activity_main den aktuellen Längen- und Breitengrad ausgeben
     TextView textLong;
     TextView textLat;
 
@@ -86,12 +87,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     double speed;
     double defaultSpeed;
-    public String speedText;
+    String speedText;
+    DecimalFormat df = new DecimalFormat("#0.0");
 
 
     Button b_settings;
-
-    private OnChangeListener SpeedListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +128,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
+        //Achtet darauf wenn der Button geklickt wird
+        //passiert mit Hilfe einer boolean Variable die jeweils auf True oder False gebracht wird
 
        fab.setOnClickListener(new View.OnClickListener(){
             @RequiresApi(api = Build.VERSION_CODES.N)
@@ -135,13 +137,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             public void onClick(View v) {
                 if(clicked){
                     Toast.makeText(MainActivity.this,"Stop Tracking",Toast.LENGTH_SHORT).show();
+
+                    //Bricht die Aufnahme der Daten ab
                     stopTracking();
+
+                    //speichert die Zeit ab wenn auf Stop gedrückt wird
                     endTime = System.currentTimeMillis();
+
+                    //Berechnet die Zeit die ingesamt getrackt wurde
                     totalTime = totalTime(startTime, endTime);
                     clicked = false;
                 } else{
+                    //nimmt die Zeit auf in der Auf start gedrückt wurde
                     startTime = System.currentTimeMillis();
+
+                    //startet das Aufnehmen der Daten
                     startTracking();
+
                     Toast.makeText(MainActivity.this,"Start Tracking",Toast.LENGTH_SHORT).show();
                     clicked = true;
                 }
@@ -150,23 +162,36 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     }
 
+    //Notwendig da sonst der NMEA-Listener nicht gehen würde
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void startTracking(){
+
+        //überprüft ob die Vorraussetzungen gegeben sind damit das Aufnehmen gestartet werden kann
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.INTERNET
             }, 10);
             return;
         }
+
+        //speichert den LocationManager
         lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+
+        //überprüft die letzte Vorrausetzung ob die Aufnahme gestartet werden kann
         if(!lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER )) {
             Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             startActivity(intent);
         }
+
         if(lm != null) {
+
+                //wenn beim erstellen des Location Manager kein Fehler aufgetreten ist startet er das abrufen der GPS-Daten
                 lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 6000, 0, MainActivity.this);
+
+                //guckt ob bereits schon eine letzte Position vorhanden war
                 Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                onLocationChanged(location);
+
+                //fügt den Nmea Listener hinzu
                 lm.addNmeaListener(MainActivity.this);
         } else{
             Toast.makeText(MainActivity.this, "Es ist ein Fehler mit der GPS-Verbingung aufgetreten.", Toast.LENGTH_LONG).show();
@@ -177,9 +202,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     }
 
+    //entfernt alle Listener und zeigt dem Nutzer an das das Tracking gestoppt wurde
     public  void stopTracking(){
-        textLat.setText("Remove");
-        textLong.setText("Remove");
+        textLat.setText("//");
+        textLong.setText("//");
         lm.removeUpdates(MainActivity.this);
         lm.removeNmeaListener(MainActivity.this);
     }
@@ -209,26 +235,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     @Override
     public void onNmeaMessage(String message, long timestamp) {
-        //filterGSA(message);
-        getLatLong(message);
+        //startet den Filter auf die ankommenden Daten
+        //gpsQuality = gpsfilterNmea(message);
+
+        //gibt Längen und Breitengrad aus
+         //getLatLong(message);
+
+        //gibt die Geschwindigkeit aus
         getSpeed(message);
 
-        //String[] rawNmeaSplit = message.split(",");
-        //filterGGA(rawNmeaSplit);
 
         //Daten abspeichern
         //String time = Long.toString(timestamp);
         //writeRawDataInStorage(MainActivity.this, time, message);
 
-        //Daten filtern und berechnen
-        //filterNmea(message);
 
+        //wenn die GPS-Qualität gegeben ist starten die Berechnungen
         /*if(gpsQuality){
-            getLatLong(message);
-
-            //checken ob null ist
-            //nicht sicher ob das so funktioniert
-            //noch Probleme damit zwei Positionen zu haben bevor Berechnung beginnt
             if(Latitude2 == 0.0 ){
                 changeAttributes();
                 } else {
@@ -268,6 +291,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     }
 
 
+    //Methode überprüft innerhalb des GGA-Satz: Anzahl der Satteliten, Angabe der Fix-Qualität
+    //Anzahl der Satteliten > 4
+    //Fix-Qualität > 0 und Fix-Qualität < 5
     public boolean filterGGA(String nmea) {
         String[] rawNmeaSplit = nmea.split(",");
         boolean gga = false;
@@ -288,6 +314,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     }
 
+    //Methode überprüft innerhalb des GSA: PDOP
+    //PDOP < 6
     public void filterGSA(String nmea){
             boolean gsa = false;
             String[] rawNmeaSplit = nmea.split(",");
@@ -305,7 +333,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             }
     }
 
-    //Vergleich funktioniert nicht, noch testen
+    //Methode überprüft innerhalb des GSV: SNR
+    //SNR > 30
     public boolean filterGSV(String[] rawNmeaSplit){
         boolean gsv = false;
         Integer n = 0;
@@ -328,24 +357,31 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         return gsv;
     }
 
+    //gibt die Geschwindigkeit aus
+    //einmal als double für die Berechnungen
+    //einmal als String um die Geschwindigkeit im Layout anzuzeigen
     public void getSpeed(String nmea) {
         String[] rawNmeaSplit = nmea.split(",");
+        if (rawNmeaSplit[0].equalsIgnoreCase("$GPRMC")) {
 
-        if (rawNmeaSplit[0].equalsIgnoreCase("$GPVTG")) {
             speed = Double.parseDouble(rawNmeaSplit[7]);
-            speedText = rawNmeaSplit[7];
+            //Konvertiert die Knoten in km/h
+            speed = convertKMH(speed);
+            //Wandel den Text bereit zur Ausgabe so um das er gut lesbar ist, notwendig da sonst endlos viele Kommastellen
+            speedText = df.format(speed);
+            textLat.setText(speedText + " km/h");
         }
     }
 
-    public String speedFromMainActivity(){
+/*    public String speedFromMainActivity(){
         if(speedText != null) {
             return speedText + "km/h";
         }else{
             return "km/h";
         }
-    }
+    }*/
 
-
+    //speichert Längen und Breitengrad und gibt es an eine setText Methode weiter
     public void getLatLong(String nmea) {
         String[] rawNmeaSplit = nmea.split(",");
 
@@ -376,6 +412,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         }
     }
 
+    //setzt den Text vo Längen- und Breitengrad
+    public void setText(String lat1, String lat2, String long1, String long2){
+        //wandelt die Angaben so um das sie für den Nutzer gut erkennbar sind
+        textLat.setText(lat1 + (char) 0x00B0 + " " + lat2 + "\"");
+        textLong.setText(long1 + (char) 0x00B0 + " " + long2 + "\"");
+    }
+
+    //Berechnet die Distanz zwischen zwei GPS-Angaben
     private double distance(double lat1, double lon1, double lat2, double lon2) {
         double theta = lon1 - lon2;
         double d = Math.sin(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) + Math.cos(deg2rad(lat1))
@@ -384,20 +428,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         return dis;
     }
 
+    //wandelt Winkel in Rad um
     private double deg2rad(double deg) {
 
         return (deg * Math.PI / 180.0);
     }
 
+    //Konvertiert GPS-Angaben aus NMEA in Dezimaldarstellung
     private double convertDecimal(double degree, double minute){
         double converted = degree + (minute/60);
         return converted;
     }
 
-    public void setText(String lat1, String lat2, String long1, String long2){
-        //wandelt die Angaben so um das sie für den Nutzer gut erkennbar sind
-       textLat.setText(lat1 + (char) 0x00B0 + " " + lat2 + "\"");
-       textLong.setText(long1 + (char) 0x00B0 + " " + long2 + "\"");
+    private double convertKMH(double knot){
+        return knot/0.53996;
     }
 
     public double savedTime(){
@@ -479,8 +523,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @Override
     protected void onPause() {
         super.onPause();
-        lm.removeUpdates(MainActivity.this);
-        lm.removeNmeaListener(MainActivity.this);
     }
 
     @Override
