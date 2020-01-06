@@ -446,8 +446,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     }
 
 
-
-
     //Read Settings
     public void readSettings(View view){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
