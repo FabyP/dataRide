@@ -14,14 +14,18 @@ import android.location.OnNmeaMessageListener;
 import android.nfc.Tag;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.provider.Settings;
+import android.text.Layout;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,7 +36,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -41,11 +48,15 @@ import androidx.preference.PreferenceManager;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.text.DecimalFormat;
+
+import static com.example.dataride.R.id.currentSpeed;
 
 
 @RequiresApi(api = Build.VERSION_CODES.N)
-public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener {
+public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener{
 
 
     //Preferences
@@ -62,10 +73,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     LocationManager lm = null;
 
-
-    //Testzwecken
+    //Textfelder die in dem Layout activity_main den aktuellen Längen- und Breitengrad ausgeben
     TextView textLong;
     TextView textLat;
+
 
     //Variablen für FABoulos
     FloatingActionButton fab;
@@ -84,10 +95,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     double totalDistance;
     double distanceTime;
     double savedTime;
+    long totalTime;
+    long startTime;
+    long endTime;
 
     double speed;
     double defaultSpeed;
+    String speedText;
+    DecimalFormat df = new DecimalFormat("#0.0");
 
+    //zum schreiben der Datein benötigt
+    String nmeaData;
+    StringBuilder sb;
 
     Button b_settings;
     private String Tag;
@@ -114,15 +133,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         });*/
 
         BottomNavigationView navView = findViewById(R.id.nav_view);
-        textLat = (TextView) findViewById(R.id.textView);
-        textLong = (TextView) findViewById(R.id.textView2);
+        textLat = (TextView) findViewById(R.id.textView2);
+        textLong = (TextView) findViewById(R.id.textView);
         fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setImageResource(R.drawable.ic_pause_black_24dp);
 
         clicked = false;
 
         gpsQuality = false;
 
         defaultSpeed = 130;
+
+        sb = new StringBuilder();
 
 
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
@@ -132,17 +154,34 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 //        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
 
+        //Achtet darauf wenn der Button geklickt wird
+        //passiert mit Hilfe einer boolean Variable die jeweils auf True oder False gebracht wird
 
        fab.setOnClickListener(new View.OnClickListener(){
             @RequiresApi(api = Build.VERSION_CODES.N)
             @Override
             public void onClick(View v) {
                 if(clicked){
+                    fab.setImageResource(R.drawable.ic_pause_black_24dp);
                     Toast.makeText(MainActivity.this,"Stop Tracking",Toast.LENGTH_SHORT).show();
+
+                    //Bricht die Aufnahme der Daten ab
                     stopTracking();
+
+                    //speichert die Zeit ab wenn auf Stop gedrückt wird
+                    endTime = System.currentTimeMillis();
+
+                    //Berechnet die Zeit die ingesamt getrackt wurde
+                    totalTime = totalTime(startTime, endTime);
                     clicked = false;
                 } else{
+                    fab.setImageResource(R.drawable.ic_play_arrow_24dp);
+                    //nimmt die Zeit auf in der Auf start gedrückt wurde
+                    startTime = System.currentTimeMillis();
+
+                    //startet das Aufnehmen der Daten
                     startTracking();
+
                     Toast.makeText(MainActivity.this,"Start Tracking",Toast.LENGTH_SHORT).show();
                     clicked = true;
                 }
@@ -151,24 +190,39 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     }
 
+    //Notwendig da sonst der NMEA-Listener nicht gehen würde
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void startTracking(){
+
+        //überprüft ob die Vorraussetzungen gegeben sind damit das Aufnehmen gestartet werden kann
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-            Toast.makeText(MainActivity.this, "Bitte die Rechte für das GPS vergeben", Toast.LENGTH_LONG).show();
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.INTERNET
+            }, 10);
+            return;
         }
-        LocationManager lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+
+        //speichert den LocationManager
+        lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+
+        //überprüft die letzte Vorrausetzung ob die Aufnahme gestartet werden kann
+        if(!lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER )) {
+            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            startActivity(intent);
+        }
+
         if(lm != null) {
-            boolean isGPSEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
-            if (isGPSEnabled) {
+
+                //wenn beim erstellen des Location Manager kein Fehler aufgetreten ist startet er das abrufen der GPS-Daten
                 lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 6000, 0, MainActivity.this);
+
+                //guckt ob bereits schon eine letzte Position vorhanden war
                 Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                onLocationChanged(location);
+
+                //fügt den Nmea Listener hinzu
                 lm.addNmeaListener(MainActivity.this);
-            } else {
-                textLong.setText("SHIT");
-            }
         } else{
-            Toast.makeText(MainActivity.this, "Kein Signal gefunden", Toast.LENGTH_LONG).show();
+            Toast.makeText(MainActivity.this, "Es ist ein Fehler mit der GPS-Verbingung aufgetreten.", Toast.LENGTH_LONG).show();
         }
 
         lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 6000, 0, MainActivity.this);
@@ -176,58 +230,51 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     }
 
+    //entfernt alle Listener und zeigt dem Nutzer an das das Tracking gestoppt wurde
     public  void stopTracking(){
-        textLat.setText("Remove");
-        textLong.setText("Remove");
-        //lm.removeUpdates(MainActivity.this);
-        //lm.removeNmeaListener(MainActivity.this);
+        writeFileExternalStorage();
+        textLat.setText("//");
+        textLong.setText("//");
+        lm.removeUpdates(MainActivity.this);
+        lm.removeNmeaListener(MainActivity.this);
     }
 
-    @Override
-    public void onLocationChanged(Location location) {}
 
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-
-    }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-
+    public long totalTime(long start, long end){
+        totalTime = (((end-start) / (1000*60*60)) % 24);
+        return totalTime;
     }
 
     @Override
     public void onNmeaMessage(String message, long timestamp) {
-        getLatLong(message);
+        //startet den Filter auf die ankommenden Daten
+        //gpsQuality = gpsfilterNmea(message);
 
-        //Daten abspeichern
-        //String time = Long.toString(timestamp);
-        //writeRawDataInStorage(MainActivity.this, time, message);
+        //gibt Längen und Breitengrad aus
+         //getLatLong(message);
 
-        //Daten filtern und berechnen
-        //filterNmea(message);
+        //gibt die Geschwindigkeit aus
+        String timestampText = String.valueOf(timestamp);
+        getSpeed(message);
+        filterGSA(message);
+        if(gpsQuality){
+            sb.append(message + " USED");
+        } else{
+            sb.append(message + " NOT USED");
+        }
 
+        //wenn die GPS-Qualität gegeben ist starten die Berechnungen
         /*if(gpsQuality){
-            getLatLong(message);
-
-            //checken ob null ist
-            //nicht sicher ob das so funktioniert
-            //noch Probleme damit zwei Positionen zu haben bevor Berechnung beginnt
             if(Latitude2 == 0.0 ){
                 changeAttributes();
                 } else {
                 getSpeed(message);
-                distance = +distance(Latitude1, Longtitude1, Latitude2, Longtitude2);
-                totalDistance = +distance;
+                distance = distance(Latitude1, Longtitude1, Latitude2, Longtitude2);
+                totalDistance += distance;
 
                 if (speed > defaultSpeed) {
-                    distanceTime = +distance;
-                    savedTime = +savedTime();
+                    distanceTime += distance;
+                    savedTime += savedTime();
                 }
                 changeAttributes();
             }
@@ -245,26 +292,31 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         boolean GSVGood = false;
         String[] rawNmeaSplit = nmea.split(",");
 
-        GGAGood = filterGGA(rawNmeaSplit);
+/*        GGAGood = filterGGA(rawNmeaSplit);
         GSAGood = filterGSA(rawNmeaSplit);
         GSVGood = filterGSV(rawNmeaSplit);
         if (GSAGood && GGAGood && GSVGood){
             gpsQuality = true;
         } else{
             gpsQuality = false;
-        }
+        }*/
 
     }
 
 
-    public boolean filterGGA(String[] rawNmeaSplit){
+    //Methode überprüft innerhalb des GGA-Satz: Anzahl der Satteliten, Angabe der Fix-Qualität
+    //Anzahl der Satteliten > 4
+    //Fix-Qualität > 0 und Fix-Qualität < 5
+    public boolean filterGGA(String nmea) {
+        String[] rawNmeaSplit = nmea.split(",");
         boolean gga = false;
 
-        if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")){
+        if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
+
             String fixQualityString = rawNmeaSplit[6];
-            Integer fixQuality = Integer.parseInt(fixQualityString);
+            int fixQuality = Integer.parseInt(fixQualityString);
             String numberSatellitesString = rawNmeaSplit[7];
-            Integer numberSatellites = Integer.parseInt(numberSatellitesString);
+            int numberSatellites = Integer.parseInt(numberSatellitesString);
             if(fixQuality > 0 && fixQuality < 5 && numberSatellites > 4){
                 gga = true;
             } else{
@@ -272,23 +324,30 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             }
         }
         return gga;
+
     }
 
-    public boolean filterGSA(String[] rawNmeaSplit){
+    //Methode überprüft innerhalb des GSA: PDOP
+    //PDOP < 6
+    public void filterGSA(String nmea){
             boolean gsa = false;
-            if(rawNmeaSplit[0].equalsIgnoreCase("$GPGSA")){
-                String PDOPString=rawNmeaSplit[15];
-                Double PDOP=Double.parseDouble(PDOPString);
+            String[] rawNmeaSplit = nmea.split(",");
+            if(rawNmeaSplit[0].equalsIgnoreCase("$GPGSA")) {
+                String PDOPString = rawNmeaSplit[15];
+                textLong.setText(PDOPString);
+                /*Double PDOP=Double.parseDouble(PDOPString);
                 if(PDOP< 6){
                     gsa = true;
                 }else{
                     gsa = false;
                 }
             }
-            return gsa;
+            return gsa;*/
+            }
     }
 
-    //Vergleich funktioniert nicht, noch testen
+    //Methode überprüft innerhalb des GSV: SNR
+    //SNR > 30
     public boolean filterGSV(String[] rawNmeaSplit){
         boolean gsv = false;
         Integer n = 0;
@@ -311,25 +370,69 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         return gsv;
     }
 
+    //gibt die Geschwindigkeit aus
+    //einmal als double für die Berechnungen
+    //einmal als String um die Geschwindigkeit im Layout anzuzeigen
     public void getSpeed(String nmea) {
         String[] rawNmeaSplit = nmea.split(",");
+        if (rawNmeaSplit[0].equalsIgnoreCase("$GPRMC")) {
 
-        if (rawNmeaSplit[0].equalsIgnoreCase("$GPVTG")) {
             speed = Double.parseDouble(rawNmeaSplit[7]);
+            //Konvertiert die Knoten in km/h
+            speed = convertKMH(speed);
+            //Wandel den Text bereit zur Ausgabe so um das er gut lesbar ist, notwendig da sonst endlos viele Kommastellen
+            speedText = df.format(speed);
+            textLat.setText(speedText + " km/h");
         }
     }
 
+/*    public String speedFromMainActivity(){
+        if(speedText != null) {
+            return speedText + "km/h";
+        }else{
+            return "km/h";
+        }
+    }*/
+
+    //speichert Längen und Breitengrad und gibt es an eine setText Methode weiter
     public void getLatLong(String nmea) {
         String[] rawNmeaSplit = nmea.split(",");
 
         if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
-            Latitude1 = Double.parseDouble(rawNmeaSplit[2]);
-            Longtitude1 = Double.parseDouble(rawNmeaSplit[4]);
-            textLat.setText(String.valueOf(Latitude1));
-            textLong.setText(String.valueOf(Longtitude1));
+
+            String Lati = rawNmeaSplit[2];
+
+            //Zahlen auf Konvertierung und Ausgabe vorbereiten
+            String Number1 = Lati.substring(0, 2);
+            String Number2 = Lati.substring(2, Lati.length());
+            double Number1Double = Double.parseDouble(Number1);
+            double Number2Double = Double.parseDouble(Number2);
+
+            Latitude1 = convertDecimal(Number1Double, Number2Double);
+
+            String Longi = rawNmeaSplit[4];
+
+            //Zahlen auf Konvertierung und Ausgabe vorbereiten
+            String Number3 = Longi.substring(0, 3);
+            String Number4 = Longi.substring(3, Longi.length());
+            double Number3Double = Double.parseDouble(Number3);
+            double Number4Double = Double.parseDouble(Number4);
+
+            Longtitude1 = convertDecimal(Number3Double, Number4Double);
+
+            //wird übergeben damit Text ausgegeben wird
+            setText(Number1, Number2, Number3, Number4);
         }
     }
 
+    //setzt den Text vo Längen- und Breitengrad
+    public void setText(String lat1, String lat2, String long1, String long2){
+        //wandelt die Angaben so um das sie für den Nutzer gut erkennbar sind
+        textLat.setText(lat1 + (char) 0x00B0 + " " + lat2 + "\"");
+        textLong.setText(long1 + (char) 0x00B0 + " " + long2 + "\"");
+    }
+
+    //Berechnet die Distanz zwischen zwei GPS-Angaben
     private double distance(double lat1, double lon1, double lat2, double lon2) {
         double theta = lon1 - lon2;
         double d = Math.sin(deg2rad(lat1)) * Math.sin(deg2rad(lat2)) + Math.cos(deg2rad(lat1))
@@ -338,15 +441,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         return dis;
     }
 
+    //wandelt Winkel in Rad um
     private double deg2rad(double deg) {
 
         return (deg * Math.PI / 180.0);
     }
 
-    //Mehtode funktioniert so nicht, convert erwartet anderes Format muss ich selbst converter schreiben
-    private double convertDecimal(double degree){
-        String converted = Location.convert( degree , Location.FORMAT_DEGREES);
-        return Double.parseDouble(converted);
+    //Konvertiert GPS-Angaben aus NMEA in Dezimaldarstellung
+    private double convertDecimal(double degree, double minute){
+        double converted = degree + (minute/60);
+        return converted;
+    }
+
+    private double convertKMH(double knot){
+        return knot/0.53996;
     }
 
     public double savedTime(){
@@ -357,6 +465,37 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     public void changeAttributes(){
         Latitude1 = Latitude2;
         Longtitude1 = Longtitude2;
+    }
+
+    public void writeFileExternalStorage() {
+
+        nmeaData = String.valueOf(sb);
+        String fileName = "dataRide " + System.currentTimeMillis();
+        //Checking the availability state of the External Storage.
+        String state = Environment.getExternalStorageState();
+        if (!Environment.MEDIA_MOUNTED.equals(state)) {
+
+            //If it isn't mounted - we can't write into it.
+            return;
+        }
+
+        //Create a new file that points to the root directory, with the given name:
+        File file = new File(getExternalFilesDir(null), fileName);
+
+        //This point and below is responsible for the write operation
+        FileOutputStream outputStream = null;
+        try {
+            file.createNewFile();
+            //second argument of FileOutputStream constructor indicates whether
+            //to append or create new file if one exists
+            outputStream = new FileOutputStream(file, true);
+
+            outputStream.write(nmeaData.getBytes());
+            outputStream.flush();
+            outputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 // kann eingefügt werden sobald Felder für Sprit und Sprittyp vorhanden sind
@@ -385,40 +524,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     }*/
 
-//muss noch getestet werden ob das funktioniert
-    public void writeRawDataInStorage(Context mcoContext, String fileName, String sBody){
-        File path = new File(mcoContext.getExternalFilesDir(null),"GPSDATA");
-        BufferedWriter bw = null;
-        if(!path.exists()){
-            path.mkdir();
-        }
-
-        try{
-            File gpsfile = new File(path, fileName);
-
-            if(!gpsfile.exists()){
-                gpsfile.createNewFile();
-            }
-
-            FileWriter fw = new FileWriter(gpsfile, true);
-            bw = new BufferedWriter(fw);
-            bw.append(sBody);
-            bw.newLine();
-
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        finally
-        {
-            try{
-                if(bw!=null)
-                    bw.close();
-            }catch(Exception ex){
-                System.out.println("Error in closing the BufferedWriter"+ex);
-            }
-        }
-    }
-
     //Android Lifecycle Methoden
     @Override
     protected void onStart() {
@@ -428,13 +533,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @Override
     protected void onPause() {
         super.onPause();
-        lm.removeUpdates(MainActivity.this);
-        lm.removeNmeaListener(MainActivity.this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.INTERNET
+            }, 10);
+            return;
+        }
+        lm = (LocationManager) MainActivity.this.getSystemService(Context.LOCATION_SERVICE);
+        if(!lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER )) {
+            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            startActivity(intent);
+        }
     }
 
     //hier wird alles entfernt sobald der Nutzer die app schließt
@@ -472,28 +586,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                     return super.onOptionsItemSelected(item);
         }
     }
+
+
+    @Override
+    public void onLocationChanged(Location location) {}
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
 }
-
-//Test Berechnung
-/*public void test(){
-        float results[] =  new float[1];
-        double latitude1 = 50.584444;
-        double longtitude1 = 8.671053;
-        double latitude2 = 50.587444;
-        double longtitude2 = 8.669015;
-        Location.distanceBetween(latitude1, longtitude1, latitude2, longtitude2, results);
-        String a = String.valueOf(results[0]);
-        textNmea.setText(a);
-        double distance = distance(latitude1, longtitude1, latitude2, longtitude2);
-        text4.setText(String.valueOf(distance));
-        double distanceKugel = distanceKugel(latitude1, longtitude1, latitude2, longtitude2);
-        textLat.setText(String.valueOf(distanceKugel));
-    }*/
-/*    public double distance(double lat1, double long1, double lat2, double long2){
-        double lat = (lat1 + lat2)/2*0.01745;
-        double dx = 111.3*(Math.cos(deg2rad(lat)))*(long1-long2); // zurück in Grad rechnen
-        double dy = 111.3*(lat1-lat2);
-
-        double distance1 = Math.sqrt(dx*dx+dy*dy);
-        return distance1;
-    }*/
