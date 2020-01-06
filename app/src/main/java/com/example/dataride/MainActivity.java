@@ -12,6 +12,7 @@ import android.location.LocationProvider;
 import android.location.OnNmeaMessageListener;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.provider.Settings;
 import android.text.Layout;
@@ -40,6 +41,7 @@ import androidx.navigation.ui.NavigationUI;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.text.DecimalFormat;
 
@@ -90,6 +92,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     String speedText;
     DecimalFormat df = new DecimalFormat("#0.0");
 
+    //zum schreiben der Datein benötigt
+    String nmeaData;
+    StringBuilder sb;
 
     Button b_settings;
 
@@ -120,6 +125,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         gpsQuality = false;
 
         defaultSpeed = 130;
+
+        sb = new StringBuilder();
 
 
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
@@ -207,29 +214,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     //entfernt alle Listener und zeigt dem Nutzer an das das Tracking gestoppt wurde
     public  void stopTracking(){
+        writeFileExternalStorage();
         textLat.setText("//");
         textLong.setText("//");
         lm.removeUpdates(MainActivity.this);
         lm.removeNmeaListener(MainActivity.this);
     }
 
-    @Override
-    public void onLocationChanged(Location location) {}
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-
-    }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-
-    }
 
     public long totalTime(long start, long end){
         totalTime = (((end-start) / (1000*60*60)) % 24);
@@ -245,8 +236,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
          //getLatLong(message);
 
         //gibt die Geschwindigkeit aus
+        String timestampText = String.valueOf(timestamp);
         getSpeed(message);
+        filterGSA(message);
+        if(gpsQuality){
+            sb.append(message + " USED");
+        } else{
+            sb.append(message + " NOT USED");
+        }
 
+
+        //String append die message dran
+        //String Builder kann ich Strings dran hängen
+        //Handy erlauben das dass File abgespeichert werden kann
+
+        //in stop Tracking das File erzeugen aus dem String
+
+        //writeRawDataInStorage(this, timestampText, message);
 
         //Daten abspeichern
         //String time = Long.toString(timestamp);
@@ -324,7 +330,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             String[] rawNmeaSplit = nmea.split(",");
             if(rawNmeaSplit[0].equalsIgnoreCase("$GPGSA")) {
                 String PDOPString = rawNmeaSplit[15];
-                //textLat.setText(PDOPString);
+                textLong.setText(PDOPString);
                 /*Double PDOP=Double.parseDouble(PDOPString);
                 if(PDOP< 6){
                     gsa = true;
@@ -457,6 +463,37 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         Longtitude1 = Longtitude2;
     }
 
+    public void writeFileExternalStorage() {
+
+        nmeaData = String.valueOf(sb);
+        String fileName = "dataRide " + System.currentTimeMillis();
+        //Checking the availability state of the External Storage.
+        String state = Environment.getExternalStorageState();
+        if (!Environment.MEDIA_MOUNTED.equals(state)) {
+
+            //If it isn't mounted - we can't write into it.
+            return;
+        }
+
+        //Create a new file that points to the root directory, with the given name:
+        File file = new File(getExternalFilesDir(null), fileName);
+
+        //This point and below is responsible for the write operation
+        FileOutputStream outputStream = null;
+        try {
+            file.createNewFile();
+            //second argument of FileOutputStream constructor indicates whether
+            //to append or create new file if one exists
+            outputStream = new FileOutputStream(file, true);
+
+            outputStream.write(nmeaData.getBytes());
+            outputStream.flush();
+            outputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 // kann eingefügt werden sobald Felder für Sprit und Sprittyp vorhanden sind
 /*    public void coOutput(){
         gasType =  gasTypeApp.getText().toString();
@@ -484,7 +521,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     }*/
 
 //muss noch getestet werden ob das funktioniert
-    public void writeRawDataInStorage(Context mcoContext, String fileName, String sBody){
+  /*  public void writeRawDataInStorage(Context mcoContext, String fileName, String sBody){
         File path = new File(mcoContext.getExternalFilesDir(null),"GPSDATA");
         BufferedWriter bw = null;
         if(!path.exists()){
@@ -516,7 +553,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             }
         }
     }
-
+*/
     //Android Lifecycle Methoden
     @Override
     protected void onStart() {
@@ -552,7 +589,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         lm.removeNmeaListener(MainActivity.this);
     }
 
+    @Override
+    public void onLocationChanged(Location location) {}
 
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
 
 }
 
