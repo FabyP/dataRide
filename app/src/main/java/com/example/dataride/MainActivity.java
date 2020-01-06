@@ -245,20 +245,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             sb.append(message + " NOT USED");
         }
 
-
-        //String append die message dran
-        //String Builder kann ich Strings dran hängen
-        //Handy erlauben das dass File abgespeichert werden kann
-
-        //in stop Tracking das File erzeugen aus dem String
-
-        //writeRawDataInStorage(this, timestampText, message);
-
-        //Daten abspeichern
-        //String time = Long.toString(timestamp);
-        //writeRawDataInStorage(MainActivity.this, time, message);
-
-
         //wenn die GPS-Qualität gegeben ist starten die Berechnungen
         /*if(gpsQuality){
             if(Latitude2 == 0.0 ){
@@ -520,40 +506,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     }*/
 
-//muss noch getestet werden ob das funktioniert
-  /*  public void writeRawDataInStorage(Context mcoContext, String fileName, String sBody){
-        File path = new File(mcoContext.getExternalFilesDir(null),"GPSDATA");
-        BufferedWriter bw = null;
-        if(!path.exists()){
-            path.mkdir();
-        }
-
-        try{
-            File gpsfile = new File(path, fileName);
-
-            if(!gpsfile.exists()){
-                gpsfile.createNewFile();
-            }
-
-            FileWriter fw = new FileWriter(gpsfile, true);
-            bw = new BufferedWriter(fw);
-            bw.append(sBody);
-            bw.newLine();
-
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-        finally
-        {
-            try{
-                if(bw!=null)
-                    bw.close();
-            }catch(Exception ex){
-                System.out.println("Error in closing the BufferedWriter"+ex);
-            }
-        }
-    }
-*/
     //Android Lifecycle Methoden
     @Override
     protected void onStart() {
@@ -608,27 +560,3 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     }
 
 }
-
-//Test Berechnung
-/*public void test(){
-        float results[] =  new float[1];
-        double latitude1 = 50.584444;
-        double longtitude1 = 8.671053;
-        double latitude2 = 50.587444;
-        double longtitude2 = 8.669015;
-        Location.distanceBetween(latitude1, longtitude1, latitude2, longtitude2, results);
-        String a = String.valueOf(results[0]);
-        textNmea.setText(a);
-        double distance = distance(latitude1, longtitude1, latitude2, longtitude2);
-        text4.setText(String.valueOf(distance));
-        double distanceKugel = distanceKugel(latitude1, longtitude1, latitude2, longtitude2);
-        textLat.setText(String.valueOf(distanceKugel));
-    }*/
-/*    public double distance(double lat1, double long1, double lat2, double long2){
-        double lat = (lat1 + lat2)/2*0.01745;
-        double dx = 111.3*(Math.cos(deg2rad(lat)))*(long1-long2); // zurück in Grad rechnen
-        double dy = 111.3*(lat1-lat2);
-
-        double distance1 = Math.sqrt(dx*dx+dy*dy);
-        return distance1;
-    }*/
