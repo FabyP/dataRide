@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel;
 public class CarViewModel extends ViewModel {
 
     private MutableLiveData<String> mText;
+    private final MutableLiveData<String> speed = new MutableLiveData<>();
 
     public CarViewModel() {
         mText = new MutableLiveData<>();
@@ -15,5 +16,13 @@ public class CarViewModel extends ViewModel {
 
     public LiveData<String> getText() {
         return mText;
+    }
+
+    public void setSpeed(String speed){
+        this.speed.setValue(speed);
+    }
+
+    public LiveData<String> getSpeed(){
+        return this.speed;
     }
 }

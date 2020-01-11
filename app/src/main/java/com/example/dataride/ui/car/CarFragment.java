@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
@@ -23,11 +24,9 @@ public class CarFragment extends Fragment {
     private TextView speedText;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-        carViewModel =
-                ViewModelProviders.of(this).get(CarViewModel.class);
+        carViewModel = ViewModelProviders.of(this).get(CarViewModel.class);
         View root = inflater.inflate(R.layout.fragment_car, container, false);
         final TextView textView = root.findViewById(R.id.text_time);
         carViewModel.getText().observe(this, new Observer<String>() {
@@ -37,9 +36,24 @@ public class CarFragment extends Fragment {
             }
         });
 
-/*        MainActivity activity = (MainActivity) getActivity();
-        speedText = (TextView)root.findViewById(R.id.currentSpeed);
-        speedText.setText(activity.speedFromMainActivity());*/
+        this.speedText = root.findViewById(R.id.currentSpeed);
         return root;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        final CarViewModel viewModel = ViewModelProviders.of(getActivity()).get(CarViewModel.class);
+
+        LiveData<String> liveValue = viewModel.getSpeed();
+
+        liveValue.observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                speedText.setText(s + " km/h");
+            }
+        });
+
     }
 }

@@ -29,6 +29,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.dataride.ui.car.CarViewModel;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -40,6 +41,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -58,6 +60,7 @@ import static com.example.dataride.R.id.currentSpeed;
 @RequiresApi(api = Build.VERSION_CODES.N)
 public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener{
 
+    private CarViewModel model;
 
     //Preferences
     public static final String PREF_GAS_VAR = "pref_gas";
@@ -232,9 +235,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     //entfernt alle Listener und zeigt dem Nutzer an das das Tracking gestoppt wurde
     public  void stopTracking(){
+        model = ViewModelProviders.of(this).get(CarViewModel.class);
         writeFileExternalStorage();
         textLat.setText("//");
         textLong.setText("//");
+        model.setSpeed("0,0");
         lm.removeUpdates(MainActivity.this);
         lm.removeNmeaListener(MainActivity.this);
     }
@@ -377,11 +382,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         String[] rawNmeaSplit = nmea.split(",");
         if (rawNmeaSplit[0].equalsIgnoreCase("$GPRMC")) {
 
+            model = ViewModelProviders.of(this).get(CarViewModel.class);
+
             speed = Double.parseDouble(rawNmeaSplit[7]);
             //Konvertiert die Knoten in km/h
             speed = convertKMH(speed);
             //Wandel den Text bereit zur Ausgabe so um das er gut lesbar ist, notwendig da sonst endlos viele Kommastellen
             speedText = df.format(speed);
+            model.setSpeed(speedText);
             textLat.setText(speedText + " km/h");
         }
     }
