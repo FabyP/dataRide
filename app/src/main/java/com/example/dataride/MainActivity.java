@@ -2,8 +2,11 @@ package com.example.dataride;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -42,6 +45,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -65,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     //Preferences
     public static final String PREF_GAS_VAR = "pref_gas";
     public static final String PREF_AVERAGE_FUEL_CONSUMPTION_VAR = "pref_average_fuel_consumption";
+    public static final String PREF_SPEED_LIMIT_VAR = "pref_speed_limit";
 
     // minimale zeit und distanz ab der die gps daten aktualisiert werden
     //angegeben in milli sekunden
@@ -192,6 +197,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         });
 
     }
+
+
 
     //Notwendig da sonst der NMEA-Listener nicht gehen würde
     @RequiresApi(api = Build.VERSION_CODES.N)
@@ -573,7 +580,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String gasPref = sharedPreferences.getString("pref_gas", "");
         String averageFuelConsumptionPref = sharedPreferences.getString("pref_average_fuel_consumption", "");
+        String speedLimitPref = sharedPreferences.getString("pref_speed_limit", "");
     }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

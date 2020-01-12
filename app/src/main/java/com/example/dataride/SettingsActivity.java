@@ -11,6 +11,7 @@ import android.view.View;
 
 public class SettingsActivity extends AppCompatActivity {
 
+    private Toolbar toolbar;
     /*SwitchCompat bluetooth;
     boolean stateSwitchBluetooth;
     SharedPreferences preferences;*/
@@ -20,7 +21,10 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
+        toolbar = findViewById(R.id.myToolBar);
+        setSupportActionBar(toolbar);
 
+        getSupportActionBar().setTitle("Einstellungen");
         /*
         preferences = getSharedPreferences("PRESS", 0);
         stateSwitchBluetooth = preferences.getBoolean("bluetooth", false);

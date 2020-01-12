@@ -2,19 +2,14 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <CheckBoxPreference
-        android:key="pref_bluetooth"
-        android:title="@string/pref_bluetooth_title"
-        android:summary="@string/pref_bluetooth_summary"
-        android:defaultValue="false"/>
 
-    <ListPreference
+    <!--<ListPreference
         android:key="pref_car_icon"
         android:title="@string/pref_car_icon_title"
         android:entries="@array/pref_car_icon_item_entries"
         android:entryValues="@array/pref_car_icon_item_values"
         android:defaultValue="@string/pref_car_icon_default_value"
-        android:summary="@string/pref_car_icon_default_value"/>
+        android:summary="@string/pref_car_icon_default_value"/>-->
 
     <PreferenceScreen
         android:key="pref_car_values"
@@ -37,8 +32,10 @@
     </PreferenceScreen>
 
     <EditTextPreference
-        android:key="dataProtection"
-        android:title="@string/dataProtection_title"/>
+        android:key="pref_speed_limit"
+        android:title="@string/pref_speed_limit_title"
+        android:defaultValue="130 km/h"
+        android:summary="@string/pref_speed_limit_summary"/>
 
 
 </PreferenceScreen>
