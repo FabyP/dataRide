@@ -119,6 +119,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     Button b_settings;
     private String Tag;
 
+    //benötigt um Spritverbrauch zu berechnen
+    String gasType;
+    double averageGasAmount;
+    double gasAmount;
+    double gas;
+    double coOutput;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -170,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             @Override
             public void onClick(View v) {
                 if(clicked){
-                    fab.setImageResource(R.drawable.ic_pause_black_24dp);
+                    fab.setImageResource(R.drawable.ic_play_arrow_24dp);
                     Toast.makeText(MainActivity.this,"Stop Tracking",Toast.LENGTH_SHORT).show();
 
                     //Bricht die Aufnahme der Daten ab
@@ -181,9 +188,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
                     //Berechnet die Zeit die ingesamt getrackt wurde
                     totalTime = totalTime(startTime, endTime);
+                    //MUSS NOCH IWO AUSGEGEBEN WERDEN
+
                     clicked = false;
                 } else{
-                    fab.setImageResource(R.drawable.ic_play_arrow_24dp);
+                    fab.setImageResource(R.drawable.ic_pause_black_24dp);
                     //nimmt die Zeit auf in der Auf start gedrückt wurde
                     startTime = System.currentTimeMillis();
 
@@ -238,12 +247,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 6000, 0, MainActivity.this);
         lm.addNmeaListener(MainActivity.this);
 
+        //holt sich die eingegeben Daten für den Spritverbrauch
+        gasType = readGasSettings();
+        averageGasAmount = readFuelSettings();
+       //defaultSpeed = readDefaultSpeed();
+
     }
 
     //entfernt alle Listener und zeigt dem Nutzer an das das Tracking gestoppt wurde
     public  void stopTracking(){
         model = ViewModelProviders.of(this).get(CarViewModel.class);
         writeFileExternalStorage();
+        //writeFileExternalStorage();
+        //coOutput();
+
+        //WAS HIER NOCH FEHLT:
+        //AUSGABE VON ZEIT; DISTANZ; GESAMTSTRECKE; CO2; BENZINVERBRAUCH
+
         textLat.setText("//");
         textLong.setText("//");
         model.setSpeed("0,0");
@@ -260,59 +280,50 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @Override
     public void onNmeaMessage(String message, long timestamp) {
         //startet den Filter auf die ankommenden Daten
-        //gpsQuality = gpsfilterNmea(message);
+        gpsQuality = filterNmea(message);
 
-        //gibt Längen und Breitengrad aus
-         //getLatLong(message);
 
-        //gibt die Geschwindigkeit aus
-        String timestampText = String.valueOf(timestamp);
-        getSpeed(message);
-        filterGSA(message);
         if(gpsQuality){
             sb.append(message + " USED");
+            getLatLong(message);
+            getSpeed(message);
+            startMath();
         } else{
             sb.append(message + " NOT USED");
         }
 
-        //wenn die GPS-Qualität gegeben ist starten die Berechnungen
-        /*if(gpsQuality){
-            if(Latitude2 == 0.0 ){
-                changeAttributes();
-                } else {
-                getSpeed(message);
-                distance = distance(Latitude1, Longtitude1, Latitude2, Longtitude2);
-                totalDistance += distance;
-
-                if (speed > defaultSpeed) {
-                    distanceTime += distance;
-                    savedTime += savedTime();
-                }
-                changeAttributes();
-            }
-
-            } else{
-                return;
-            }*/
-
     }
 
 
-    public void filterNmea(String nmea){
+    public void startMath(){
+        if(Latitude2 == 0.0 ){
+            changeAttributes();
+        } else {
+            distance = distance(Latitude1, Longtitude1, Latitude2, Longtitude2);
+            totalDistance += distance;
+            if (speed > defaultSpeed) {
+                distanceTime += distance;
+                savedTime += savedTime();
+                }
+            changeAttributes();
+        }
+    }
+
+    public boolean filterNmea(String nmea){
         boolean GSAGood = false;
         boolean GGAGood = false;
         boolean GSVGood = false;
-        String[] rawNmeaSplit = nmea.split(",");
 
-/*        GGAGood = filterGGA(rawNmeaSplit);
-        GSAGood = filterGSA(rawNmeaSplit);
-        GSVGood = filterGSV(rawNmeaSplit);
+
+        GGAGood = filterGGA(nmea);
+        GSAGood = filterGSA(nmea);
+        GSVGood = filterGSV(nmea);
+
         if (GSAGood && GGAGood && GSVGood){
-            gpsQuality = true;
+            return true;
         } else{
-            gpsQuality = false;
-        }*/
-
+            return false;
+        }
     }
 
 
@@ -326,8 +337,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
 
             String fixQualityString = rawNmeaSplit[6];
+            textLong.setText(fixQualityString);
             int fixQuality = Integer.parseInt(fixQualityString);
             String numberSatellitesString = rawNmeaSplit[7];
+            textLat.setText(numberSatellitesString);
             int numberSatellites = Integer.parseInt(numberSatellitesString);
             if(fixQuality > 0 && fixQuality < 5 && numberSatellites > 4){
                 gga = true;
@@ -337,47 +350,42 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         }
         return gga;
 
-    }
+        }
+
 
     //Methode überprüft innerhalb des GSA: PDOP
     //PDOP < 6
-    public void filterGSA(String nmea){
+    public boolean filterGSA(String nmea){
             boolean gsa = false;
             String[] rawNmeaSplit = nmea.split(",");
             if(rawNmeaSplit[0].equalsIgnoreCase("$GPGSA")) {
                 String PDOPString = rawNmeaSplit[15];
-                textLong.setText(PDOPString);
-                /*Double PDOP=Double.parseDouble(PDOPString);
+
+                Double PDOP=Double.parseDouble(PDOPString);
                 if(PDOP< 6){
                     gsa = true;
                 }else{
                     gsa = false;
                 }
             }
-            return gsa;*/
-            }
+            return gsa;
     }
+
 
     //Methode überprüft innerhalb des GSV: SNR
     //SNR > 30
-    public boolean filterGSV(String[] rawNmeaSplit){
+    public boolean filterGSV(String nmea){
         boolean gsv = false;
-        Integer n = 0;
-        Integer m = 4;
-            for (int i = 0; i < 4; i++) {
-                if (rawNmeaSplit[0].equalsIgnoreCase("$GPGSV")) {
-                    String SNRString = rawNmeaSplit[0];
-                    Integer SNR = Integer.parseInt(SNRString);
-                    if (SNR > 30) {
-                        n = +1;
-                    }
-                }
-            }
-            if(n.intValue() == m.intValue()){
+        String[] rawNmeaSplit = nmea.split(",");
+        if (rawNmeaSplit[0].equalsIgnoreCase("$GPGSV")) {
+            String SNRString = rawNmeaSplit[0];
+            Integer SNR = Integer.parseInt(SNRString);
+            if (SNR > 30) {
                 gsv = true;
-            } else{
+            } else {
                 gsv = false;
             }
+        }
 
         return gsv;
     }
@@ -400,14 +408,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             textLat.setText(speedText + " km/h");
         }
     }
-
-/*    public String speedFromMainActivity(){
-        if(speedText != null) {
-            return speedText + "km/h";
-        }else{
-            return "km/h";
-        }
-    }*/
 
     //speichert Längen und Breitengrad und gibt es an eine setText Methode weiter
     public void getLatLong(String nmea) {
@@ -514,9 +514,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     }
 
 // kann eingefügt werden sobald Felder für Sprit und Sprittyp vorhanden sind
-/*    public void coOutput(){
-        gasType =  gasTypeApp.getText().toString();
-        gasAmount = Double.parseDouble(gasAmountApp.getText().toString());
+   public void coOutput(){
         switch(gasType) {
             case "Benzin":
                 gas = 3.24;
@@ -525,19 +523,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                 gas = 1.90;
                 break;
             case "Diesel":
-            default:
                 gas = 2.88;
+            default:
                 break;
         }
         if( gas != 0.00){
-            coOutput = gas * (driven / 100 * gasAmount);
-            coAmount.setText(coOutput);
+            gasAmount = averageGasAmount * totalDistance;
+            coOutput = gas * gasAmount;
+            //coAmount.setText(coOutput);
         } else{
             //Angabe das keine gemacht wurde und das co2 feld wird leer angezeigt?!
             //enable des Buttons?
         }
 
-    }*/
+    }
 
     //Android Lifecycle Methoden
     @Override
@@ -576,13 +575,27 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
 
     //Read Settings
-    public void readSettings(View view){
+    public String readGasSettings(){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String gasPref = sharedPreferences.getString("pref_gas", "");
-        String averageFuelConsumptionPref = sharedPreferences.getString("pref_average_fuel_consumption", "");
-        String speedLimitPref = sharedPreferences.getString("pref_speed_limit", "");
+
+        return gasPref;
     }
 
+    public float readFuelSettings(){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String averageFuelConsumptionPref = sharedPreferences.getString("pref_average_fuel_consumption", "");
+        float averageFuel = Float.parseFloat(averageFuelConsumptionPref);
+
+        return averageFuel;
+    }
+
+    public float readSpeedLimitSettings(){
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String speedLimitPref = sharedPreferences.getString("pref_speed_limit", "");
+        float speedLimit = Float.parseFloat(speedLimitPref);
+        return speedLimit;
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
