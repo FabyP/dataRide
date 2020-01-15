@@ -19,7 +19,7 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
             android:textAlignment="center"
-            android:textSize="34sp" />
+            android:textSize="40sp" />
 
         <TextView
             android:id="@+id/text_time"
@@ -29,7 +29,7 @@
             android:layout_marginEnd="8dp"
             android:textAlignment="center"
             android:textColor="@color/colorPrimaryDark"
-            android:textSize="16sp" />
+            android:textSize="20sp" />
 
         <ImageView
             android:id="@+id/imageView2"
@@ -51,7 +51,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
                 android:layout_weight="1"
-                android:text="@string/car_speed" />
+                android:text="@string/car_speed"
+                android:textSize="20sp"/>
 
             <TextView
                 android:id="@+id/currentSpeed"
@@ -61,7 +62,8 @@
                 android:layout_weight="1"
                 android:text="@string/speed_Deafault"
                 android:textAlignment="textEnd"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:textSize="20sp"/>
 
         </LinearLayout>
 
@@ -78,7 +80,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
                 android:layout_weight="1"
-                android:text="@string/car_passedTime" />
+                android:text="@string/car_passedTime"
+                android:textSize="20sp"/>
 
             <TextView
                 android:id="@+id/passedTime"
@@ -86,9 +89,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="32dp"
                 android:layout_weight="1"
-                android:text="35 min"
+                android:text="@string/passedTimeValue"
                 android:textAlignment="textEnd"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:textSize="20sp"/>
         </LinearLayout>
 
         <LinearLayout
@@ -104,7 +108,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
                 android:layout_weight="1"
-                android:text="@string/car_savedTime" />
+                android:text="@string/car_savedTime"
+                android:textSize="20sp"/>
 
             <TextView
                 android:id="@+id/savedTime"
@@ -114,7 +119,8 @@
                 android:layout_weight="1"
                 android:text="0 min"
                 android:textAlignment="textEnd"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:textSize="20sp"/>
         </LinearLayout>
 
     </LinearLayout>

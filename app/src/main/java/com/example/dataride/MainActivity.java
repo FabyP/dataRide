@@ -44,6 +44,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.navigation.NavController;
@@ -103,9 +104,32 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     double totalDistance;
     double distanceTime;
     double savedTime;
-    long totalTime;
-    long startTime;
+    //long totalTime;
+    LiveData<String> totalTime;
+    long startTime = 0;
     long endTime;
+
+    Handler timerHandler = new Handler();
+    Runnable timerRunnable = new Runnable(){
+
+        @Override
+        public void run() {
+            model = ViewModelProviders.of(MainActivity.this).get(CarViewModel.class);
+            long millis = System.currentTimeMillis() - startTime;
+            int seconds = (int) (millis / 1000);
+            int minutes = seconds / 60;
+            seconds = seconds % 60;
+
+            //textLong.setText(String.format("%d:%02d", minutes, seconds));
+            model.setPassedTime(String.format("%d:%02d", minutes, seconds));
+
+            //Final formatierter Text
+            //model.setPassedTime(String.format("%d", minutes) + " min");
+
+            timerHandler.postDelayed(this, 500);
+        }
+    };
+
 
     double speed;
     double defaultSpeed;
@@ -186,16 +210,21 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                     //speichert die Zeit ab wenn auf Stop gedrückt wird
                     endTime = System.currentTimeMillis();
 
+                    timerHandler.removeCallbacks(timerRunnable);
+
                     //Berechnet die Zeit die ingesamt getrackt wurde
-                    totalTime = totalTime(startTime, endTime);
+                    //totalTime = totalTime(startTime, endTime);
+
+
                     //MUSS NOCH IWO AUSGEGEBEN WERDEN
+
 
                     clicked = false;
                 } else{
                     fab.setImageResource(R.drawable.ic_pause_black_24dp);
                     //nimmt die Zeit auf in der Auf start gedrückt wurde
                     startTime = System.currentTimeMillis();
-
+                    timerHandler.postDelayed(timerRunnable, 0);
                     //startet das Aufnehmen der Daten
                     startTracking();
 
@@ -257,59 +286,75 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     //entfernt alle Listener und zeigt dem Nutzer an das das Tracking gestoppt wurde
     public  void stopTracking(){
         model = ViewModelProviders.of(this).get(CarViewModel.class);
+        coOutput();
+        sb.append(totalTime + " Gesamtzeit");
+        sb.append(savedTime + " insgesamt gesparte Zeit");
+        sb.append(totalDistance + " Gesamtdistanz");
+        sb.append(distanceTime + " Distanz, die umgerechnet wurde");
+        sb.append(coOutput + " CO2-Output");
+        sb.append(gasAmount + " Spirtverbrauch");
+
         writeFileExternalStorage();
         //writeFileExternalStorage();
-        //coOutput();
+
 
         //WAS HIER NOCH FEHLT:
         //AUSGABE VON ZEIT; DISTANZ; GESAMTSTRECKE; CO2; BENZINVERBRAUCH
 
         textLat.setText("//");
-        textLong.setText("//");
+        //textLong.setText("//");
         model.setSpeed("0,0");
         lm.removeUpdates(MainActivity.this);
         lm.removeNmeaListener(MainActivity.this);
     }
 
 
-    public long totalTime(long start, long end){
+    /*public long totalTime(long start, long end){
         totalTime = (((end-start) / (1000*60*60)) % 24);
         return totalTime;
-    }
+    }*/
 
     @Override
     public void onNmeaMessage(String message, long timestamp) {
         //startet den Filter auf die ankommenden Daten
-        gpsQuality = filterNmea(message);
+        //gpsQuality = filterNmea(message);
 
 
-        if(gpsQuality){
+        sb.append(message + " USED");
+        getLatLong(message);
+        getSpeed(message);
+        startMath();
+
+        /*if(gpsQuality){
             sb.append(message + " USED");
             getLatLong(message);
             getSpeed(message);
             startMath();
         } else{
             sb.append(message + " NOT USED");
-        }
+        }*/
 
     }
 
 
     public void startMath(){
+        model = ViewModelProviders.of(this).get(CarViewModel.class);
         if(Latitude2 == 0.0 ){
             changeAttributes();
         } else {
             distance = distance(Latitude1, Longtitude1, Latitude2, Longtitude2);
             totalDistance += distance;
+            //textLong.setText(String.valueOf(savedTime));
             if (speed > defaultSpeed) {
                 distanceTime += distance;
                 savedTime += savedTime();
+                model.setSavedTime(String.valueOf(savedTime));
                 }
             changeAttributes();
         }
     }
 
-    public boolean filterNmea(String nmea){
+    /*public boolean filterNmea(String nmea){
         boolean GSAGood = false;
         boolean GGAGood = false;
         boolean GSVGood = false;
@@ -388,7 +433,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         }
 
         return gsv;
-    }
+    }*/
 
     //gibt die Geschwindigkeit aus
     //einmal als double für die Berechnungen
@@ -443,8 +488,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     //setzt den Text vo Längen- und Breitengrad
     public void setText(String lat1, String lat2, String long1, String long2){
         //wandelt die Angaben so um das sie für den Nutzer gut erkennbar sind
-        textLat.setText(lat1 + (char) 0x00B0 + " " + lat2 + "\"");
-        textLong.setText(long1 + (char) 0x00B0 + " " + long2 + "\"");
+        //textLat.setText(lat1 + (char) 0x00B0 + " " + lat2 + "\"");
+        //textLong.setText(long1 + (char) 0x00B0 + " " + long2 + "\"");
     }
 
     //Berechnet die Distanz zwischen zwei GPS-Angaben
@@ -571,6 +616,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         super.onDestroy();
         lm.removeUpdates(MainActivity.this);
         lm.removeNmeaListener(MainActivity.this);
+        timerHandler.removeCallbacks(timerRunnable);
     }
 
 

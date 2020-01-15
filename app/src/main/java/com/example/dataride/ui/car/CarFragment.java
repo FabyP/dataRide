@@ -22,6 +22,8 @@ public class CarFragment extends Fragment {
 
     private CarViewModel carViewModel;
     private TextView speedText;
+    private TextView savedGasText;
+    private TextView passedTimeText;
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -37,6 +39,9 @@ public class CarFragment extends Fragment {
         });
 
         this.speedText = root.findViewById(R.id.currentSpeed);
+        this.savedGasText = root.findViewById(R.id.savedTime);
+        this.passedTimeText = root.findViewById(R.id.passedTime);
+
         return root;
     }
 
@@ -46,8 +51,8 @@ public class CarFragment extends Fragment {
 
         final CarViewModel viewModel = ViewModelProviders.of(getActivity()).get(CarViewModel.class);
 
+        //Speed
         LiveData<String> liveValue = viewModel.getSpeed();
-
         liveValue.observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(String s) {
@@ -55,5 +60,22 @@ public class CarFragment extends Fragment {
             }
         });
 
+        //Saved Time
+        LiveData<String> liveSavedTimeValue = viewModel.getSavedTime();
+        liveSavedTimeValue.observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                savedGasText.setText(s + " min");
+            }
+        });
+
+        //Passed Time
+        LiveData<String> livePassedTimeValue = viewModel.getPassedTime();
+        livePassedTimeValue.observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                passedTimeText.setText(s);
+            }
+        });
     }
 }
