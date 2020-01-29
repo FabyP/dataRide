@@ -2,6 +2,7 @@ package com.example.dataride;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.FragmentManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -33,6 +34,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dataride.ui.car.CarViewModel;
+import com.example.dataride.ui.statistics.InfoDialog;
+import com.example.dataride.ui.statistics.StatisticsViewModel;
+import com.example.dataride.ui.statistics.StatisticsFragment;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -43,7 +48,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -60,12 +64,16 @@ import java.io.FileWriter;
 import java.text.DecimalFormat;
 
 import static com.example.dataride.R.id.currentSpeed;
+import static com.example.dataride.R.id.info;
 
 
 @RequiresApi(api = Build.VERSION_CODES.N)
 public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener{
 
+
+    //ViewModel
     private CarViewModel model;
+    private StatisticsViewModel statisticsModel;
 
     //Preferences
     public static final String PREF_GAS_VAR = "pref_gas";
@@ -150,6 +158,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     double gas;
     double coOutput;
 
+    @SuppressLint("WrongViewCast")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -235,7 +244,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         });
 
     }
-
 
 
     //Notwendig da sonst der NMEA-Listener nicht gehen würde
@@ -339,6 +347,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     public void startMath(){
         model = ViewModelProviders.of(this).get(CarViewModel.class);
+        statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
         if(Latitude2 == 0.0 ){
             changeAttributes();
         } else {
@@ -349,6 +358,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                 distanceTime += distance;
                 savedTime += savedTime();
                 model.setSavedTime(String.valueOf(savedTime));
+                statisticsModel.setSavedTimeStat(String.valueOf(savedTime));
                 }
             changeAttributes();
         }
@@ -576,6 +586,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             gasAmount = averageGasAmount * totalDistance;
             coOutput = gas * gasAmount;
             //coAmount.setText(coOutput);
+            statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
+            statisticsModel.setGasAmountStat(String.valueOf(gasAmount));
+            statisticsModel.setCo2Stat(String.valueOf(coOutput));
         } else{
             //Angabe das keine gemacht wurde und das co2 feld wird leer angezeigt?!
             //enable des Buttons?
