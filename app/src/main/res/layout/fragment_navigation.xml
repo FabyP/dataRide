@@ -24,7 +24,7 @@
         mapbox:mapbox_cameraTargetLat = "37.7749"
         mapbox:mapbox_cameraTargetLng = "-122.4194"
         mapbox:mapbox_styleUrl="mapbox://styles/mapbox/streets-v10"
-        mapbox:mapbox_cameraZoom="12"
+        mapbox:mapbox_cameraZoom="1"
         />
 
 
