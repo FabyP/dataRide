@@ -3,6 +3,7 @@ package com.example.dataride;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.FragmentManager;
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -63,9 +64,10 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.text.DecimalFormat;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import static com.example.dataride.R.id.currentSpeed;
 import static com.example.dataride.R.id.info;
-
 
 @RequiresApi(api = Build.VERSION_CODES.N)
 public class MainActivity extends AppCompatActivity implements LocationListener, OnNmeaMessageListener{
@@ -82,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     // minimale zeit und distanz ab der die gps daten aktualisiert werden
     //angegeben in milli sekunden
-    private static final long MIN_TIME_TO_REFRESH = 3000L;
+    private static final long MIN_TIME_TO_REFRESH = 1000L;
 
     //angegeben in meter
     //hier auf 0 gesetzt damit er einfach immer nur das zeitintervall nimmt
@@ -101,12 +103,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     //Variable für Filter
     boolean gpsQuality;
+    boolean gpsQualityMin;
+    boolean gsa, gga, GSAGood;
 
     //Variablen zur Berechnung
-    double Latitude1;
-    double Longtitude1 ;
-    double Latitude2 ;
-    double Longtitude2;
+    double LatitudeFirst;
+    double LongtitudeFirst;
+    double LatitudeLast;
+    double LongtitudeLast;
 
     double distance;
     double totalDistance;
@@ -190,7 +194,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
         gpsQuality = false;
 
-        defaultSpeed = 130;
+        LatitudeLast = 0.0;
+        LongtitudeLast = 0.0;
 
         sb = new StringBuilder();
 
@@ -250,6 +255,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     @RequiresApi(api = Build.VERSION_CODES.N)
     public void startTracking(){
 
+        //holt sich die eingegeben Daten für den Spritverbrauch und den DeafultSpeed
+        gasType = readGasSettings();
+        averageGasAmount = readFuelSettings();
+        defaultSpeed = readSpeedLimitSettings();
+
         //überprüft ob die Vorraussetzungen gegeben sind damit das Aufnehmen gestartet werden kann
         if(ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             requestPermissions(new String[]{
@@ -270,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         if(lm != null) {
 
                 //wenn beim erstellen des Location Manager kein Fehler aufgetreten ist startet er das abrufen der GPS-Daten
-                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 6000, 0, MainActivity.this);
+                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_TO_REFRESH, MIN_DISTANCE_TO_REFRESH, MainActivity.this);
 
                 //guckt ob bereits schon eine letzte Position vorhanden war
                 Location location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -281,13 +291,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             Toast.makeText(MainActivity.this, "Es ist ein Fehler mit der GPS-Verbingung aufgetreten.", Toast.LENGTH_LONG).show();
         }
 
-        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 6000, 0, MainActivity.this);
+        lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, MIN_TIME_TO_REFRESH, MIN_DISTANCE_TO_REFRESH, MainActivity.this);
         lm.addNmeaListener(MainActivity.this);
 
-        //holt sich die eingegeben Daten für den Spritverbrauch
-        gasType = readGasSettings();
-        averageGasAmount = readFuelSettings();
-       //defaultSpeed = readDefaultSpeed();
+
+
 
     }
 
@@ -295,27 +303,37 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     public  void stopTracking(){
         model = ViewModelProviders.of(this).get(CarViewModel.class);
         coOutput();
-        sb.append(totalTime + " Gesamtzeit");
-        sb.append(savedTime + " insgesamt gesparte Zeit");
-        sb.append(totalDistance + " Gesamtdistanz");
-        sb.append(distanceTime + " Distanz, die umgerechnet wurde");
-        sb.append(coOutput + " CO2-Output");
-        sb.append(gasAmount + " Spirtverbrauch");
+        //rechnet von Stunden auf Minuten um
+        if(savedTime > 0){
+            savedTime = savedTime / 60.0;
+        }
 
-        writeFileExternalStorage();
-        //writeFileExternalStorage();
+        sb.append("insgesamt gesparte Zeit " + savedTime + " Minuten " + "\n");
+        sb.append(" Gesamtdistanz " + totalDistance + " km " + "\n");
+        sb.append(" Distanz, die umgerechnet wurde " + distanceTime + " km " + "\n");
+        sb.append(" CO2-Output " + coOutput + "\n");
+        sb.append(" Spirtverbrauch " + gasAmount + " Liter " + "\n");
 
-
-        //WAS HIER NOCH FEHLT:
-        //AUSGABE VON ZEIT; DISTANZ; GESAMTSTRECKE; CO2; BENZINVERBRAUCH
+        writeFileExternalStorage(sb);
 
         textLat.setText("//");
-        //textLong.setText("//");
+        textLong.setText("//");
         model.setSpeed("0,0");
+
         lm.removeUpdates(MainActivity.this);
         lm.removeNmeaListener(MainActivity.this);
+
+        resetValues();
     }
 
+    public void resetValues(){
+        savedTime = 0;
+        totalDistance = 0;
+        coOutput = 0;
+        gasAmount = 0;
+        LatitudeLast = 0;
+        LongtitudeLast = 0;
+    }
 
     /*public long totalTime(long start, long end){
         totalTime = (((end-start) / (1000*60*60)) % 24);
@@ -326,59 +344,116 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     public void onNmeaMessage(String message, long timestamp) {
         //startet den Filter auf die ankommenden Daten
         //gpsQuality = filterNmea(message);
+        sb.append("Anfang" + "\n");
 
-
-        sb.append(message + " USED");
         getLatLong(message);
         getSpeed(message);
-        startMath();
 
-        /*if(gpsQuality){
-            sb.append(message + " USED");
-            getLatLong(message);
-            getSpeed(message);
-            startMath();
-        } else{
-            sb.append(message + " NOT USED");
-        }*/
+        GSAGood = filterGSA(message);
 
+        if(speed >= 1) {
+            if (GSAGood) {
+                gsa = true;
+            } else {
+                gsa = false;
+            }
+
+            String[] rawNmeaSplit = message.split(",");
+
+            float fixQuality;
+            float numberSatellites;
+
+            if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
+
+                String fixQualityString = rawNmeaSplit[6];
+                String numberSatellitesString = rawNmeaSplit[7];
+
+                if(fixQualityString.length() == 0) {
+                    gga = false;
+                }else if(numberSatellitesString.length() == 0){
+                    gga = false;
+                } else {
+
+                    fixQuality = Float.parseFloat(fixQualityString);
+                    numberSatellites = Float.parseFloat(numberSatellitesString);
+                    sb.append("Satelliten " + numberSatellitesString + "\n");
+                    sb.append("FixQuality " + fixQualityString + "\n");
+
+                    if(fixQuality > 0 && fixQuality < 5 && numberSatellites > 4){
+                        gga = true;
+
+                    } else{
+                        gga = false;
+
+                    }
+                }
+            }
+
+            sb.append("Lat1 " + LatitudeFirst + "\n");
+            sb.append("Long1 " + LongtitudeFirst + "\n");
+            sb.append("Lat2 " + LatitudeLast + "\n");
+            sb.append("Long2 " + LongtitudeLast + "\n");
+
+            if (gsa) {
+                if(gga) {
+
+                    sb.append("    " + gsa +"    " + gga + "    " + "\n");
+                    /*String gp = message.substring(0, 3);
+                    if (gp.equalsIgnoreCase("$GP")) {
+                        sb.append("USED " + message + "\n");
+                    }*/
+                    startMath();
+                }
+            } /*else {
+                String gp = message.substring(0, 3);
+                if (gp.equalsIgnoreCase("$GP")) {
+                    sb.append("NOT USED " + message + "\n");
+                }*/
+
+        }
+
+        sb.append("Ende" + "\n");
     }
 
 
     public void startMath(){
         model = ViewModelProviders.of(this).get(CarViewModel.class);
         statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
-        if(Latitude2 == 0.0 ){
+        sb.append("wurde gestartet MATHE" + "/n");
+        if(LatitudeLast == 0.0 ){
             changeAttributes();
         } else {
-            distance = distance(Latitude1, Longtitude1, Latitude2, Longtitude2);
-            totalDistance += distance;
-            //textLong.setText(String.valueOf(savedTime));
-            if (speed > defaultSpeed) {
-                distanceTime += distance;
-                savedTime += savedTime();
+            distance = distance(LatitudeFirst, LongtitudeFirst, LatitudeLast, LongtitudeLast);
+            totalDistance = totalDistance + distance;
+            if (speed >= defaultSpeed) {
+                distanceTime = distanceTime + distance;
+                double a = savedTime(distance, defaultSpeed);
+                savedTime = savedTime + a;
                 model.setSavedTime(String.valueOf(savedTime));
                 statisticsModel.setSavedTimeStat(String.valueOf(savedTime));
-                }
+
+            }
             changeAttributes();
         }
     }
 
-    /*public boolean filterNmea(String nmea){
-        boolean GSAGood = false;
-        boolean GGAGood = false;
-        boolean GSVGood = false;
-
+/*    public boolean filterNmea(String nmea){
+        boolean GSAGood;
+        boolean GGAGood;
+        boolean GSVGood;
+        boolean result;
 
         GGAGood = filterGGA(nmea);
         GSAGood = filterGSA(nmea);
         GSVGood = filterGSV(nmea);
 
-        if (GSAGood && GGAGood && GSVGood){
-            return true;
+        if(GGAGood && GSAGood && GSVGood){
+            result = true;
         } else{
-            return false;
+            result = false;
         }
+
+        return result;
     }
 
 
@@ -388,62 +463,104 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     public boolean filterGGA(String nmea) {
         String[] rawNmeaSplit = nmea.split(",");
         boolean gga = false;
+        float fixQuality;
+        float numberSatellites;
 
         if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
 
             String fixQualityString = rawNmeaSplit[6];
-            textLong.setText(fixQualityString);
-            int fixQuality = Integer.parseInt(fixQualityString);
             String numberSatellitesString = rawNmeaSplit[7];
-            textLat.setText(numberSatellitesString);
-            int numberSatellites = Integer.parseInt(numberSatellitesString);
-            if(fixQuality > 0 && fixQuality < 5 && numberSatellites > 4){
-                gga = true;
-            } else{
-                gga =  false;
+
+            if(fixQualityString.length() == 0) {
+                gga = false;
+                sb.append("Fix Quality FAILED " + nmea);
+
+            }else if(numberSatellitesString.length() == 0){
+                sb.append("Satelliten FAILED " + nmea);
+
+                gga = false;
+            } else {
+
+                fixQuality = Float.parseFloat(fixQualityString);
+                numberSatellites = Float.parseFloat(numberSatellitesString);
+                sb.append("Satelliten " + numberSatellitesString);
+                sb.append("FixQuality " + fixQualityString);
+
+                if(fixQuality > 0 && fixQuality < 5 && numberSatellites > 4){
+                    gga = true;
+                    //sb.append("FixQuality Satelliten " + gga);
+                    //ab.append("FixQuality Satelliten " + gga);
+                } else{
+                    gga = false;
+                    //sb.append("FixQuality Satelliten " + gga);
+                    //ab.append("FixQuality Satelliten " + gga);
+                }
             }
         }
         return gga;
-
-        }
+    }*/
 
 
     //Methode überprüft innerhalb des GSA: PDOP
     //PDOP < 6
     public boolean filterGSA(String nmea){
-            boolean gsa = false;
-            String[] rawNmeaSplit = nmea.split(",");
-            if(rawNmeaSplit[0].equalsIgnoreCase("$GPGSA")) {
-                String PDOPString = rawNmeaSplit[15];
+        boolean gsa = false;
+        String PDOPString;
+        String[] rawNmeaSplit = nmea.split(",");
+        if(rawNmeaSplit[0].equalsIgnoreCase("$GPGSA")) {
 
+            PDOPString = rawNmeaSplit[23];
+
+            if(PDOPString.length() == 0){
+                sb.append("PDOP FAILED " + nmea + "\n");
+                gsa = false;
+            } else {
                 Double PDOP=Double.parseDouble(PDOPString);
+                sb.append("PDOP " + PDOPString + "\n");
+
                 if(PDOP< 6){
                     gsa = true;
+                    //sb.append("PDOP " + gsa);
+                    //ab.append("PDOP " + gsa);
                 }else{
                     gsa = false;
+                    //sb.append("PDOP " + gsa);
+                    //ab.append("PDOP " + gsa);
                 }
             }
-            return gsa;
+        }
+        return gsa;
     }
 
 
     //Methode überprüft innerhalb des GSV: SNR
     //SNR > 30
-    public boolean filterGSV(String nmea){
+    //Filter Aufgrund von Testdaten angepasst
+/*    public boolean filterGSV(String nmea){
         boolean gsv = false;
+        double SNR;
         String[] rawNmeaSplit = nmea.split(",");
         if (rawNmeaSplit[0].equalsIgnoreCase("$GPGSV")) {
-            String SNRString = rawNmeaSplit[0];
-            Integer SNR = Integer.parseInt(SNRString);
-            if (SNR > 30) {
-                gsv = true;
-            } else {
+            String SNRString = rawNmeaSplit[7];
+            if(SNRString.length() == 0){
                 gsv = false;
+                sb.append("SNR FAILED " + nmea);
+            } else {
+                SNR = Double.parseDouble(SNRString);
+                sb.append("SNR " + SNRString);
+                if (SNR >= 20) {
+                    gsv = true;
+                    sb.append("SNR " + gsv);
+                } else {
+                    gsv = false;
+                    sb.append("SNR " + gsv);
+                }
             }
         }
-
         return gsv;
     }*/
+
+
 
     //gibt die Geschwindigkeit aus
     //einmal als double für die Berechnungen
@@ -460,7 +577,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             //Wandel den Text bereit zur Ausgabe so um das er gut lesbar ist, notwendig da sonst endlos viele Kommastellen
             speedText = df.format(speed);
             model.setSpeed(speedText);
-            textLat.setText(speedText + " km/h");
         }
     }
 
@@ -478,7 +594,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             double Number1Double = Double.parseDouble(Number1);
             double Number2Double = Double.parseDouble(Number2);
 
-            Latitude1 = convertDecimal(Number1Double, Number2Double);
+            LatitudeFirst = convertDecimal(Number1Double, Number2Double);
 
             String Longi = rawNmeaSplit[4];
 
@@ -488,7 +604,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             double Number3Double = Double.parseDouble(Number3);
             double Number4Double = Double.parseDouble(Number4);
 
-            Longtitude1 = convertDecimal(Number3Double, Number4Double);
+            LongtitudeFirst = convertDecimal(Number3Double, Number4Double);
 
             //wird übergeben damit Text ausgegeben wird
             setText(Number1, Number2, Number3, Number4);
@@ -498,8 +614,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     //setzt den Text vo Längen- und Breitengrad
     public void setText(String lat1, String lat2, String long1, String long2){
         //wandelt die Angaben so um das sie für den Nutzer gut erkennbar sind
-        //textLat.setText(lat1 + (char) 0x00B0 + " " + lat2 + "\"");
-        //textLong.setText(long1 + (char) 0x00B0 + " " + long2 + "\"");
+        textLat.setText(lat1 + (char) 0x00B0 + " " + lat2 + "\"");
+        textLong.setText(long1 + (char) 0x00B0 + " " + long2 + "\"");
     }
 
     //Berechnet die Distanz zwischen zwei GPS-Angaben
@@ -524,22 +640,34 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     }
 
     private double convertKMH(double knot){
-        return knot/0.53996;
+        if (knot >= 1){
+            return knot/0.53996;
+        } else{
+           return 0.00;
+        }
     }
 
-    public double savedTime(){
-        double time = distance/defaultSpeed;
+    public double savedTime(double length, double velocity){
+        double time;
+
+        if(velocity < 1){
+            time = 0;
+        } else if(length < 1){
+            time = 0;
+        } else{
+            time = length/velocity;
+        }
         return time;
     }
 
     public void changeAttributes(){
-        Latitude1 = Latitude2;
-        Longtitude1 = Longtitude2;
+        LatitudeLast = LatitudeFirst;
+        LongtitudeLast = LongtitudeFirst;
     }
 
-    public void writeFileExternalStorage() {
+    public void writeFileExternalStorage(StringBuilder a) {
 
-        nmeaData = String.valueOf(sb);
+        nmeaData = String.valueOf(a);
         String fileName = "dataRide " + System.currentTimeMillis();
         //Checking the availability state of the External Storage.
         String state = Environment.getExternalStorageState();
@@ -569,6 +697,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     }
 
 // kann eingefügt werden sobald Felder für Sprit und Sprittyp vorhanden sind
+    //works
    public void coOutput(){
         switch(gasType) {
             case "Benzin":
@@ -582,7 +711,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             default:
                 break;
         }
-        if( gas != 0.00){
+        if( gas >= 1){
             gasAmount = averageGasAmount * totalDistance;
             coOutput = gas * gasAmount;
             //coAmount.setText(coOutput);
@@ -590,8 +719,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             statisticsModel.setGasAmountStat(String.valueOf(gasAmount));
             statisticsModel.setCo2Stat(String.valueOf(coOutput));
         } else{
-            //Angabe das keine gemacht wurde und das co2 feld wird leer angezeigt?!
-            //enable des Buttons?
+            gasAmount = 0.0;
+            coOutput = 0.0;
+            statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
+            statisticsModel.setGasAmountStat(String.valueOf(gasAmount));
+            statisticsModel.setCo2Stat(String.valueOf(coOutput));
         }
 
     }
@@ -641,18 +773,30 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         return gasPref;
     }
 
-    public float readFuelSettings(){
+    public double readFuelSettings(){
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String averageFuelConsumptionPref = sharedPreferences.getString("pref_average_fuel_consumption", "");
-        float averageFuel = Float.parseFloat(averageFuelConsumptionPref);
+        averageFuelConsumptionPref = averageFuelConsumptionPref.replace(",", ".");
+        double averageFuel = Float.parseFloat(averageFuelConsumptionPref);
 
         return averageFuel;
     }
 
-    public float readSpeedLimitSettings(){
+    public double readSpeedLimitSettings(){
+        double speedLimit = 0;
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String speedLimitPref = sharedPreferences.getString("pref_speed_limit", "");
-        float speedLimit = Float.parseFloat(speedLimitPref);
+        //speedLimitPref = speedLimitPref.replace(",", ".");
+/*        //Pattern p = Pattern.compile("\\d{0,2}+(\\.\\d{1,2})?");
+        //Matcher m = p.matcher(speedLimitPref);
+        boolean b = Pattern.matches("\\d{0,2}+(\\.\\d{1,2})?", speedLimitPref);
+        if(b){
+            speedLimit = Float.parseFloat(speedLimitPref);
+            return speedLimit;
+        } else{
+            Toast.makeText(MainActivity.this, "hcvkshiuvhsuifc", Toast.LENGTH_LONG).show();
+            return speedLimit;
+        }*/
         return speedLimit;
     }
 

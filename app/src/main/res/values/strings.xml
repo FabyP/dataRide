@@ -5,6 +5,8 @@
     <string name="title_navigation">Navigation</string>
     <string name="title_statistics">Statistiken</string>
 
+    <string name="access_token">pk.eyJ1IjoibGFjb29raWVtb25zdGVyIiwiYSI6ImNrMnp5ZXJpMzBseGQzZ2t0aHpwb2t0b2gifQ.1HNFnr0hO6_jSFK9-QPT5Q</string>
+
 
     <!-- Car -->
     <string name="car_speed">Geschwindigkeit</string>
