@@ -47,6 +47,7 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
@@ -103,7 +104,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     //Variable für Filter
     boolean gpsQuality;
-    boolean gpsQualityMin;
     boolean gsa, gga, GSAGood;
 
     //Variablen zur Berechnung
@@ -116,6 +116,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     double totalDistance;
     double distanceTime;
     double savedTime;
+    String savedTimeString;
     //long totalTime;
     LiveData<String> totalTime;
     long startTime = 0;
@@ -142,15 +143,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         }
     };
 
-
+    double a, b, c;
     double speed;
     double defaultSpeed;
     String speedText;
     DecimalFormat df = new DecimalFormat("#0.0");
+    DecimalFormat dfTime = new DecimalFormat("#0.00");
 
     //zum schreiben der Datein benötigt
     String nmeaData;
     StringBuilder sb;
+    StringBuilder ab;
+    StringBuilder tb;
 
     Button b_settings;
     private String Tag;
@@ -198,6 +202,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         LongtitudeLast = 0.0;
 
         sb = new StringBuilder();
+        ab = new StringBuilder();
+        tb = new StringBuilder();
+
+        ab.append("Alles" + "\n");
+        tb.append("Only True" + "\n");
 
 
         AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
@@ -303,10 +312,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     public  void stopTracking(){
         model = ViewModelProviders.of(this).get(CarViewModel.class);
         coOutput();
-        //rechnet von Stunden auf Minuten um
-        if(savedTime > 0){
-            savedTime = savedTime / 60.0;
-        }
 
         sb.append("insgesamt gesparte Zeit " + savedTime + " Minuten " + "\n");
         sb.append(" Gesamtdistanz " + totalDistance + " km " + "\n");
@@ -315,6 +320,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         sb.append(" Spirtverbrauch " + gasAmount + " Liter " + "\n");
 
         writeFileExternalStorage(sb);
+        writeFileExternalStorage(ab);
+        writeFileExternalStorage(tb);
 
         textLat.setText("//");
         textLong.setText("//");
@@ -348,6 +355,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
         getLatLong(message);
         getSpeed(message);
+        ab.append("Lat1;" + LatitudeFirst + ";" + "Long1;" +LongtitudeFirst + "\n");
 
         GSAGood = filterGSA(message);
 
@@ -394,6 +402,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             sb.append("Lat2 " + LatitudeLast + "\n");
             sb.append("Long2 " + LongtitudeLast + "\n");
 
+
+
             if (gsa) {
                 if(gga) {
 
@@ -402,6 +412,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                     if (gp.equalsIgnoreCase("$GP")) {
                         sb.append("USED " + message + "\n");
                     }*/
+                    tb.append("Lat1;" + LatitudeFirst + ";" + "Long1;" +LongtitudeFirst + "\n");
                     startMath();
                 }
             } /*else {
@@ -419,19 +430,35 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
     public void startMath(){
         model = ViewModelProviders.of(this).get(CarViewModel.class);
         statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
-        sb.append("wurde gestartet MATHE" + "/n");
+        sb.append("wurde gestartet MATHE" + "\n");
         if(LatitudeLast == 0.0 ){
             changeAttributes();
         } else {
             distance = distance(LatitudeFirst, LongtitudeFirst, LatitudeLast, LongtitudeLast);
-            totalDistance = totalDistance + distance;
-            if (speed >= defaultSpeed) {
-                distanceTime = distanceTime + distance;
-                double a = savedTime(distance, defaultSpeed);
-                savedTime = savedTime + a;
-                model.setSavedTime(String.valueOf(savedTime));
-                statisticsModel.setSavedTimeStat(String.valueOf(savedTime));
+            Double distanceCheck = distance;
+            if(!distanceCheck.isNaN()){
+                textLat.setText(String.valueOf(distance));
+                sb.append("Distanz " + distance + "\n");
+                totalDistance = totalDistance + distance;
+                sb.append("Gesamtdistanz " + totalDistance + "\n");
+                if (speed >= defaultSpeed) {
+                    distanceTime = distanceTime + distance;
+                    sb.append("distance Time " + distanceTime + "\n");
 
+                    //neuer Teil erechnet die Differenz zwischen den beiden gerbauchten Zeiten
+                    b = savedTime(distance, speed);
+                    a = savedTime(distance, defaultSpeed);
+                    c = a-b;
+                    sb.append("a " + savedTime + "\n");
+                    savedTime = savedTime + c;
+
+                    sb.append("savedTime " + savedTime + "\n");
+
+                    //damit es in der Anzeige eine sinnvolle Darstellung hat
+                    savedTimeString = dfTime.format(savedTime);
+                    model.setSavedTime(savedTimeString);
+                    statisticsModel.setSavedTimeStat(savedTimeString);
+                }
             }
             changeAttributes();
         }
@@ -510,7 +537,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         if(rawNmeaSplit[0].equalsIgnoreCase("$GPGSA")) {
 
             PDOPString = rawNmeaSplit[23];
-
+            sb.append("PDOP String " + nmea + "\n");
             if(PDOPString.length() == 0){
                 sb.append("PDOP FAILED " + nmea + "\n");
                 gsa = false;
@@ -649,13 +676,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
     public double savedTime(double length, double velocity){
         double time;
-
+        sb.append("Lnegth " + length + "\n");
+        sb.append("velo " + velocity + "\n");
         if(velocity < 1){
             time = 0;
-        } else if(length < 1){
+            sb.append("velocity " + "\n");
+        } else if(length == 0){
             time = 0;
+            sb.append("WLength " + "\n");
         } else{
-            time = length/velocity;
+            time = (length/velocity)*60;
+            textLong.setText(String.valueOf(time));
+            sb.append("War hier in savedTime " + "\n");
         }
         return time;
     }
@@ -712,12 +744,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                 break;
         }
         if( gas >= 1){
-            gasAmount = averageGasAmount * totalDistance;
-            coOutput = gas * gasAmount;
-            //coAmount.setText(coOutput);
-            statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
-            statisticsModel.setGasAmountStat(String.valueOf(gasAmount));
-            statisticsModel.setCo2Stat(String.valueOf(coOutput));
+            if(totalDistance >= 1) {
+                gasAmount = averageGasAmount * totalDistance;
+                coOutput = gas * gasAmount;
+                statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
+                statisticsModel.setGasAmountStat(String.valueOf(gasAmount));
+                statisticsModel.setCo2Stat(String.valueOf(coOutput));
+            }
         } else{
             gasAmount = 0.0;
             coOutput = 0.0;
@@ -753,7 +786,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             startActivity(intent);
         }
+        if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+        } else {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+        }
     }
+
+
 
     //hier wird alles entfernt sobald der Nutzer die app schließt
     @Override
@@ -777,7 +817,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String averageFuelConsumptionPref = sharedPreferences.getString("pref_average_fuel_consumption", "");
         averageFuelConsumptionPref = averageFuelConsumptionPref.replace(",", ".");
-        double averageFuel = Float.parseFloat(averageFuelConsumptionPref);
+        double averageFuel = Double.parseDouble(averageFuelConsumptionPref);
 
         return averageFuel;
     }
@@ -791,12 +831,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         //Matcher m = p.matcher(speedLimitPref);
         boolean b = Pattern.matches("\\d{0,2}+(\\.\\d{1,2})?", speedLimitPref);
         if(b){
-            speedLimit = Float.parseFloat(speedLimitPref);
+
             return speedLimit;
         } else{
             Toast.makeText(MainActivity.this, "hcvkshiuvhsuifc", Toast.LENGTH_LONG).show();
             return speedLimit;
         }*/
+        speedLimit = Double.parseDouble(speedLimitPref);
         return speedLimit;
     }
 
