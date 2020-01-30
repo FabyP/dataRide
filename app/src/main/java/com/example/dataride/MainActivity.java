@@ -786,6 +786,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         double speedLimit = 0;
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String speedLimitPref = sharedPreferences.getString("pref_speed_limit", "");
+        speedLimit = Float.parseFloat(speedLimitPref);
         //speedLimitPref = speedLimitPref.replace(",", ".");
 /*        //Pattern p = Pattern.compile("\\d{0,2}+(\\.\\d{1,2})?");
         //Matcher m = p.matcher(speedLimitPref);
