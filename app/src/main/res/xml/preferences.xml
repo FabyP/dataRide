@@ -33,8 +33,9 @@
 
     <EditTextPreference
         android:key="pref_speed_limit"
+        android:inputType="numberDecimal"
         android:title="@string/pref_speed_limit_title"
-        android:defaultValue="130 km/h"
+        android:defaultValue="130"
         android:summary="@string/pref_speed_limit_summary"/>
 
 

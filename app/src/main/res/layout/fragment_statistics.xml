@@ -205,11 +205,10 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:layout_marginEnd="4dp"
-        android:backgroundTint="#ffffff"
-        android:tint="#21947A"
+        android:backgroundTint="#FAFAFA"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        mstb:srcCompat="@android:drawable/ic_dialog_info" />
+        android:src="@drawable/ic_info_outline_black_24dp" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

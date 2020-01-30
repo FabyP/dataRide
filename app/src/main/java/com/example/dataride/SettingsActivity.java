@@ -1,20 +1,15 @@
 package com.example.dataride;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.appcompat.widget.Toolbar;
-import androidx.preference.ListPreference;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
+
+import java.util.Objects;
 
 public class SettingsActivity extends AppCompatActivity {
 
     private Toolbar toolbar;
-    /*SwitchCompat bluetooth;
-    boolean stateSwitchBluetooth;
-    SharedPreferences preferences;*/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,25 +19,7 @@ public class SettingsActivity extends AppCompatActivity {
         toolbar = findViewById(R.id.myToolBar);
         setSupportActionBar(toolbar);
 
-        getSupportActionBar().setTitle("Einstellungen");
-        /*
-        preferences = getSharedPreferences("PRESS", 0);
-        stateSwitchBluetooth = preferences.getBoolean("bluetooth", false);
-
-        bluetooth = (SwitchCompat) findViewById(R.id.bluetooth);
-
-        bluetooth.setChecked(stateSwitchBluetooth);
-
-        bluetooth.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stateSwitchBluetooth = !stateSwitchBluetooth;
-                bluetooth.setChecked(stateSwitchBluetooth);
-                SharedPreferences.Editor editor = preferences.edit();
-                editor.putBoolean("bluetooth", stateSwitchBluetooth);
-                editor.apply();
-            }
-        });*/
+        Objects.requireNonNull(getSupportActionBar()).setTitle("Einstellungen");
 
         if(findViewById(R.id.fragment_container) != null){
             if(savedInstanceState != null)
