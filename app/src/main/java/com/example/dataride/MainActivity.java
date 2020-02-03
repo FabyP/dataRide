@@ -197,7 +197,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         //textLat = (TextView) findViewById(R.id.textView2);
         //textLong = (TextView) findViewById(R.id.textView);
         fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setImageResource(R.drawable.ic_pause_black_24dp);
+        fab.setImageResource(R.drawable.ic_play_arrow_24dp);
 
         clicked = false;
 
@@ -249,6 +249,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                     //nimmt die Zeit auf in der Auf start gedrückt wurde
                     startTime = System.currentTimeMillis();
                     timerHandler.postDelayed(timerRunnable, 0);
+
+                    model = ViewModelProviders.of(MainActivity.this).get(CarViewModel.class);
+                    savedTimeString = dfTime.format(savedTime);
+                    model.setSavedTime(savedTimeString);
 
                     //startet das Aufnehmen der Daten
                     startTracking();
@@ -365,14 +369,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         getSpeed(message);
 
         //filtert den PDOP Wert
-        GSAGood = filterGSA(message);
+        //GSAGood = filterGSA(message);
 
         if(speed >= 1) {
-            if (GSAGood) {
+            /*if (GSAGood) {
                 gsa = true;
             } else {
                 gsa = false;
-            }
+            }*/
 
             String[] rawNmeaSplit = message.split(",");
 
@@ -380,7 +384,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             float fixQuality;
             float numberSatellites;
 
-            if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
+            /*if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
 
                 String fixQualityString = rawNmeaSplit[6];
                 String numberSatellitesString = rawNmeaSplit[7];
@@ -402,15 +406,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
                     }
                 }
-            }
+            }*/
 
-            if (gsa) {
+            /*if (gsa) {
                 if (gga) {
                     //scheibt in den Stringbuilder die Längen und Breitengrade
                     sb.append("Lat1;" + LatitudeFirst + ";" + "Long1;" + LongtitudeFirst + "\n");
                     startMath();
                 }
-            }
+            }*/
+            sb.append("Lat1;" + LatitudeFirst + ";" + "Long1;" + LongtitudeFirst + "\n");
+            startMath();
         }
 
     }
@@ -451,7 +457,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                     //damit es in der Anzeige eine sinnvolle Darstellung hat wird es geeignet angepasst
                     savedTimeString = dfTime.format(savedTime);
                     model.setSavedTime(savedTimeString);
-                    statisticsModel.setSavedTimeStat(savedTimeString);
+                    //statisticsModel.setSavedTimeStat(savedTimeString);
                 }
             }
             //wechselt LängengradFirst zu Last usw.
@@ -701,16 +707,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
                 String coOutputString = dfTime.format(coOutput);
 
                 //gibt die an das Statistik-Fragment weiter
-                statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
+                /*statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
                 statisticsModel.setGasAmountStat(gasAmountString);
-                statisticsModel.setCo2Stat(coOutputString);
+                statisticsModel.setCo2Stat(coOutputString);*/
             }
         } else{
             gasAmount = 0.0;
             coOutput = 0.0;
-            statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
+            /*statisticsModel = ViewModelProviders.of(this).get(StatisticsViewModel.class);
             statisticsModel.setGasAmountStat(String.valueOf(gasAmount));
-            statisticsModel.setCo2Stat(String.valueOf(coOutput));
+            statisticsModel.setCo2Stat(String.valueOf(coOutput));*/
         }
 
     }
