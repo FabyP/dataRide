@@ -1,12 +1,15 @@
 package com.example.dataride.ui.statistics;
 
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.NonNull;
@@ -15,9 +18,23 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
+import com.example.dataride.MainActivity;
 import com.example.dataride.R;
 
+import org.honorato.multistatetogglebutton.MultiStateToggleButton;
+import org.honorato.multistatetogglebutton.ToggleButton;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.Objects;
+
+import static android.content.ContentValues.TAG;
 
 public class StatisticsFragment extends Fragment {
 
@@ -25,6 +42,13 @@ public class StatisticsFragment extends Fragment {
     private TextView co2StatText;
     private TextView gasAmountStatText;
     private ImageButton infoButton;
+    private MultiStateToggleButton button;
+
+    //Werte die für die Statistikausgabe anhand der Buttons benötigt werden
+    double savedTimePrint;
+    double gasAmountPrint;
+    double co2AmountPrint;
+    String line;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -47,6 +71,135 @@ public class StatisticsFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 openDialog();
+            }
+        });
+
+        button = (MultiStateToggleButton) root.findViewById(R.id.mstb_date_range);
+
+        button.setOnValueChangedListener(new ToggleButton.OnValueChangedListener() {
+            @Override
+            public void onValueChanged(int position) {
+
+                //holt sich das File values
+                File sdcard = Environment.getExternalStorageDirectory();
+                File file = new File(sdcard,"values.txt");
+                StringBuilder text = new StringBuilder();
+
+                //DAS HIER MUSS ERSETZT WERDEN DA VALUE EIGENTLICH VON DEN BUTTON KOMMEN MÜSSTE MIT DER ANGABE BEI WELCHEM STRING MAN IST OB TAG MONAT...
+                String value = "";
+
+
+                //holt sich das aktuelle Datum und schreibt es in Stamp
+                Calendar kalender = Calendar.getInstance();
+                SimpleDateFormat datumsformat = new SimpleDateFormat("dd.MM.yyyy");
+                String stamp = datumsformat.format(kalender.getTime());
+
+                BufferedReader br = null;
+
+                try {
+                    br = new BufferedReader(new FileReader(file));
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                //hängt an Text den gesamten Inhalt von Values
+                while (true) {
+                    try {
+                        if (!((line = br.readLine()) != null)) break;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    text.append(line);
+                }
+
+                //wenn Tag wird hier verarbeitet
+                if(value.equals("Tag")){
+                    //macht den String Builder in einen String
+                    String message = text.toString();
+                    //splitetet den String immer am Hashtag auf
+                    String[] rawValuesSplit = message.split("#");
+                    //holt sich die Länge des Arrays um iterieren zu können
+                    int size = rawValuesSplit.length;
+                    for (int i=0; i<size; i++) {
+                        //iteriert über jedes Arrayitem drüber und macht dafür das folgende
+                        String rawValues = rawValuesSplit[i];
+                        //splitet den gegeben Satz nochmal auf am ; um alle Werte einzeln zu haben: Datum, SavedTime, Gas, CO2
+                        String[] values = rawValues.split(";");
+                        //wenn das Datum im ersten dem Stamp gleicht war es der selbe Tag
+                        if(values[0].equals(stamp)){
+                            //zählt die Werte auf die passenden drauf
+                            savedTimePrint = savedTimePrint + Double.parseDouble(values[1]);
+                            gasAmountPrint = gasAmountPrint + Double.parseDouble(values[2]);
+                            co2AmountPrint = co2AmountPrint + Double.parseDouble(values[3]);
+                        }
+
+                    }
+                    //setzt dementsprechnend die Werte neu in der Ansicht die für den Nutzer sichtbar ist
+                    savedTimeStatText.setText(String.valueOf(savedTimePrint));
+                    co2StatText.setText(String.valueOf(co2AmountPrint));
+                    gasAmountStatText.setText(String.valueOf(gasAmountPrint));
+                } else if(value.equals("Monat")){
+                    //macht den String Builder in einen String
+                    String message = text.toString();
+                    //splitetet den String immer am Hashtag auf
+                    String[] rawValuesSplit = message.split("#");
+                    //holt sich die Länge des Arrays um iterieren zu können
+                    int size = rawValuesSplit.length;
+                    //splitet den Stamp auf damit wir davon den Monat bestimmen können
+                    String[] rawDate = stamp.split(".");
+                    //speichert den Monat ab
+                    String month = rawDate[1];
+                    for (int i=0; i<size; i++) {
+                        String rawValues = rawValuesSplit[i];
+                        String[] values = rawValues.split(";");
+                        //speichert das Datum zum aufsplitten
+                        String a = values[0];
+                        //splittet das geholte Datum auf damit der Monat geholt werden kann
+                        String[] rawDateValues = a.split(".");
+                        //wenn der Monat dem StampMonat gleicht war es der selbe Monat
+                        if(rawDateValues[1].equals(month)){
+                            //zählt die Werte auf die passenden drauf
+                            savedTimePrint = savedTimePrint + Double.parseDouble(values[1]);
+                            gasAmountPrint = gasAmountPrint + Double.parseDouble(values[2]);
+                            co2AmountPrint = co2AmountPrint + Double.parseDouble(values[3]);
+                        }
+
+                    }
+                    //setzt dementsprechnend die Werte neu in der Ansicht die für den Nutzer sichtbar ist
+                    savedTimeStatText.setText(String.valueOf(savedTimePrint));
+                    co2StatText.setText(String.valueOf(co2AmountPrint));
+                    gasAmountStatText.setText(String.valueOf(gasAmountPrint));
+
+                } else if(value.equals("Jahr")) {
+                    //macht den String Builder in einen String
+                    String message = text.toString();
+                    //splitetet den String immer am Hashtag auf
+                    String[] rawValuesSplit = message.split("#");
+                    //holt sich die Länge des Arrays um iterieren zu können
+                    int size = rawValuesSplit.length;
+                    //splitet den Stamp auf damit wir davon das Jahr bestimmen können
+                    String[] rawDate = stamp.split(".");
+                    //speichert das Jahr ab
+                    String year = rawDate[2];
+                    for (int i = 0; i < size; i++) {
+                        String rawValues = rawValuesSplit[i];
+                        String[] values = rawValues.split(";");
+                        //speichert das Datum zum aufsplitten
+                        String a = values[0];
+                        //splittet das geholte Datum auf damit das Jahr geholt werden kann
+                        String[] rawDateValues = a.split(".");
+                        //wenn das Jahr dem Stampjahrt gleicht war es der selbe Jahr
+                        if (rawDateValues[3].equals(year)) {
+                            //zählt die Werte auf die passenden drauf
+                            savedTimePrint = savedTimePrint + Double.parseDouble(values[1]);
+                            gasAmountPrint = gasAmountPrint + Double.parseDouble(values[2]);
+                            co2AmountPrint = co2AmountPrint + Double.parseDouble(values[3]);
+                        }
+                    }
+                    //setzt dementsprechnend die Werte neu in der Ansicht die für den Nutzer sichtbar ist
+                    savedTimeStatText.setText(String.valueOf(savedTimePrint));
+                    co2StatText.setText(String.valueOf(co2AmountPrint));
+                    gasAmountStatText.setText(String.valueOf(gasAmountPrint));
+                }
             }
         });
 
