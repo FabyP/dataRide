@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+    <!--<ListPreference
+        android:key="pref_car_icon"
+        android:title="@string/pref_car_icon_title"
+        android:entries="@array/pref_car_icon_item_entries"
+        android:entryValues="@array/pref_car_icon_item_values"
+        android:defaultValue="@string/pref_car_icon_default_value"
+        android:summary="@string/pref_car_icon_default_value"/>-->
+
+    <PreferenceScreen
+        android:key="pref_car_values"
+        android:title="@string/pref_car_values_title"
+        android:summary="@string/pref_car_values_summary">
+
+        <ListPreference
+            android:key="pref_gas"
+            android:title="@string/pref_gas_title"
+            android:entries="@array/pref_gas_item_entries"
+            android:entryValues="@array/pref_gas_item_values"
+            android:defaultValue="@string/pref_gas_default_value"
+            android:summary="@string/pref_gas_default_value"/>
+
+        <EditTextPreference
+            android:key="pref_average_fuel_consumption"
+            android:title="@string/pref_average_fuel_consumption_title"
+            android:summary="@string/pref_average_fuel_consumption_summary"
+            android:defaultValue="6"/>
+    </PreferenceScreen>
+
+    <EditTextPreference
+        android:key="pref_speed_limit"
+        android:inputType="numberDecimal"
+        android:title="@string/pref_speed_limit_title"
+        android:defaultValue="130"
+        android:summary="@string/pref_speed_limit_summary"/>
+
+
+</PreferenceScreen>

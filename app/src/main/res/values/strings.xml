@@ -1,6 +1,74 @@
 <resources>
+    <!--Navigation -->
     <string name="app_name">dataRide</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="title_car">Auto</string>
+    <string name="title_navigation">Standort</string>
+    <string name="title_statistics">Statistiken</string>
+
+    <string name="access_token">pk.eyJ1IjoibGFjb29raWVtb25zdGVyIiwiYSI6ImNrMnp5ZXJpMzBseGQzZ2t0aHpwb2t0b2gifQ.1HNFnr0hO6_jSFK9-QPT5Q</string>
+
+
+    <!-- Car -->
+    <string name="car_speed">Geschwindigkeit</string>
+    <string name="car_passedTime">Vergangene Zeit</string>
+    <string name="passedTimeValue">0 min</string>
+    <string name="car_savedTime">Gesparte Zeit</string>
+    <string name="car_altSVG">Vektorgrafik eines Autos</string>
+    <string name="speed_Deafault">0,0 km/h</string>
+
+
+    <!-- Settings -->
+    <string name="pref_car_icon_title">Auto Icon</string>
+    <string-array name="pref_car_icon_item_entries">
+        <item>Limousine</item>
+        <item>Kleinwagen</item>
+        <item>Sportwagen</item>
+    </string-array>
+    <string-array name="pref_car_icon_item_values">
+        <item>Limousine</item>
+        <item>Kleinwagen</item>
+        <item>Sportwagen</item>
+    </string-array>
+    <string name="pref_car_icon_default_value">Limousine</string>
+
+    <string name="pref_car_values_title">Benutzerspezifische Autowerte</string>
+    <string name="pref_car_values_summary">Werte zur Berechnung des CO2-Ausstoßes</string>
+
+    <string name="pref_gas_title">Kraftstoff</string>
+    <string-array name="pref_gas_item_entries">
+        <item>Benzin</item>
+        <item>Diesel</item>
+    </string-array>
+    <string-array name="pref_gas_item_values">
+        <item>Benzin</item>
+        <item>Diesel</item>
+    </string-array>
+    <string name="pref_gas_default_value">Benzin</string>
+
+    <string name="pref_average_fuel_consumption_title">Durchschnittsverbrauch</string>
+    <string name="pref_average_fuel_consumption_summary">In Liter pro 100km</string>
+
+    <string name="pref_speed_limit_title" >Geschwindigkeitslimit</string>
+    <string name="pref_speed_limit_summary" >130</string>
+
+
+    <!-- Statistics -->
+    <string name="text_statistiken">Statistiken</string>
+
+    <string name="statistics_savedTime_text">Gesparte Zeit</string>
+    <string name="statistics_savedTime_value">0 min</string>
+    <string name="statistics_co2_text">CO2 Ausstoß</string>
+    <string name="statistics_co2_value">0 kg</string>
+    <string name="statistics_gasAmount_text">Spritverbrauch</string>
+    <string name="statistics_gasAmount_value">0,0 l</string>
+    <string name="statistics_image_circle_description">circle</string>
+    <string name="statistics_image_circle2_description">circle</string>
+
+    <string-array name="dateRange_array">
+        <item>Tag</item>
+        <item>Monat</item>
+        <item>Jahr</item>
+    </string-array>
+
+
 </resources>
