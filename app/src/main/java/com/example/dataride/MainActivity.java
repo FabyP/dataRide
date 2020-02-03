@@ -369,14 +369,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
         getSpeed(message);
 
         //filtert den PDOP Wert
-        //GSAGood = filterGSA(message);
+        GSAGood = filterGSA(message);
 
         if(speed >= 1) {
-            /*if (GSAGood) {
+            if (GSAGood) {
                 gsa = true;
             } else {
                 gsa = false;
-            }*/
+            }
 
             String[] rawNmeaSplit = message.split(",");
 
@@ -384,7 +384,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
             float fixQuality;
             float numberSatellites;
 
-            /*if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
+            if (rawNmeaSplit[0].equalsIgnoreCase("$GPGGA")) {
 
                 String fixQualityString = rawNmeaSplit[6];
                 String numberSatellitesString = rawNmeaSplit[7];
@@ -406,17 +406,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener,
 
                     }
                 }
-            }*/
+            }
 
-            /*if (gsa) {
+            if (gsa) {
                 if (gga) {
                     //scheibt in den Stringbuilder die Längen und Breitengrade
                     sb.append("Lat1;" + LatitudeFirst + ";" + "Long1;" + LongtitudeFirst + "\n");
                     startMath();
                 }
-            }*/
-            sb.append("Lat1;" + LatitudeFirst + ";" + "Long1;" + LongtitudeFirst + "\n");
-            startMath();
+            }
+
         }
 
     }
