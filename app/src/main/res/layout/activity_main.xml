@@ -59,65 +59,6 @@
         app:layout_constraintStart_toStartOf="parent" />-->
 
 
-    <LinearLayout
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:gravity="bottom"
-    android:orientation="horizontal"
-    android:paddingLeft="8dp"
-    android:paddingRight="8dp"
-    app:layout_constraintBottom_toTopOf="@+id/nav_view"
-    android:layout_marginBottom="100dp">
-
-    <TextView
-        android:id="@+id/latitude"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
-        android:layout_weight="1"
-        android:text="Latitude" />
-
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="32dp"
-        android:layout_weight="1"
-        android:text="lat"
-        android:textAlignment="textEnd"
-        android:textStyle="bold" />
-
-</LinearLayout>
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="bottom"
-        android:orientation="horizontal"
-        android:paddingLeft="8dp"
-        android:paddingRight="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/nav_view"
-        android:layout_marginBottom="80dp">
-
-        <TextView
-            android:id="@+id/longitude"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="32dp"
-            android:layout_weight="1"
-            android:text="Longitude" />
-
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="32dp"
-            android:layout_weight="1"
-            android:text="long"
-            android:textAlignment="textEnd"
-            android:textStyle="bold" />
-
-    </LinearLayout>
-
     <!--<LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
